@@ -4,6 +4,7 @@ import * as flatbuffers from 'flatbuffers';
 
 import { ExecType } from '../exchange/exec-type.js';
 import { RejectCode } from '../exchange/reject-code.js';
+import { Side } from '../exchange/side.js';
 
 
 export class OrderResponse implements flatbuffers.IUnpackableObject<OrderResponseT> {
@@ -49,23 +50,28 @@ symbolId():number {
   return offset ? this.bb!.readUint32(this.bb_pos + offset) : 0;
 }
 
-p():bigint {
+side():Side {
   const offset = this.bb!.__offset(this.bb_pos, 14);
+  return offset ? this.bb!.readInt8(this.bb_pos + offset) : Side.Buy;
+}
+
+p():bigint {
+  const offset = this.bb!.__offset(this.bb_pos, 16);
   return offset ? this.bb!.readInt64(this.bb_pos + offset) : BigInt('0');
 }
 
 q():bigint {
-  const offset = this.bb!.__offset(this.bb_pos, 16);
+  const offset = this.bb!.__offset(this.bb_pos, 18);
   return offset ? this.bb!.readUint64(this.bb_pos + offset) : BigInt('0');
 }
 
 rejectCode():RejectCode {
-  const offset = this.bb!.__offset(this.bb_pos, 18);
+  const offset = this.bb!.__offset(this.bb_pos, 20);
   return offset ? this.bb!.readInt8(this.bb_pos + offset) : RejectCode.None;
 }
 
 static startOrderResponse(builder:flatbuffers.Builder) {
-  builder.startObject(8);
+  builder.startObject(9);
 }
 
 static addExecType(builder:flatbuffers.Builder, execType:ExecType) {
@@ -88,16 +94,20 @@ static addSymbolId(builder:flatbuffers.Builder, symbolId:number) {
   builder.addFieldInt32(4, symbolId, 0);
 }
 
+static addSide(builder:flatbuffers.Builder, side:Side) {
+  builder.addFieldInt8(5, side, Side.Buy);
+}
+
 static addP(builder:flatbuffers.Builder, p:bigint) {
-  builder.addFieldInt64(5, p, BigInt('0'));
+  builder.addFieldInt64(6, p, BigInt('0'));
 }
 
 static addQ(builder:flatbuffers.Builder, q:bigint) {
-  builder.addFieldInt64(6, q, BigInt('0'));
+  builder.addFieldInt64(7, q, BigInt('0'));
 }
 
 static addRejectCode(builder:flatbuffers.Builder, rejectCode:RejectCode) {
-  builder.addFieldInt8(7, rejectCode, RejectCode.None);
+  builder.addFieldInt8(8, rejectCode, RejectCode.None);
 }
 
 static endOrderResponse(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -105,13 +115,14 @@ static endOrderResponse(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 }
 
-static createOrderResponse(builder:flatbuffers.Builder, execType:ExecType, orderId:bigint, clientId:number, execId:bigint, symbolId:number, p:bigint, q:bigint, rejectCode:RejectCode):flatbuffers.Offset {
+static createOrderResponse(builder:flatbuffers.Builder, execType:ExecType, orderId:bigint, clientId:number, execId:bigint, symbolId:number, side:Side, p:bigint, q:bigint, rejectCode:RejectCode):flatbuffers.Offset {
   OrderResponse.startOrderResponse(builder);
   OrderResponse.addExecType(builder, execType);
   OrderResponse.addOrderId(builder, orderId);
   OrderResponse.addClientId(builder, clientId);
   OrderResponse.addExecId(builder, execId);
   OrderResponse.addSymbolId(builder, symbolId);
+  OrderResponse.addSide(builder, side);
   OrderResponse.addP(builder, p);
   OrderResponse.addQ(builder, q);
   OrderResponse.addRejectCode(builder, rejectCode);
@@ -125,6 +136,7 @@ unpack(): OrderResponseT {
     this.clientId(),
     this.execId(),
     this.symbolId(),
+    this.side(),
     this.p(),
     this.q(),
     this.rejectCode()
@@ -138,6 +150,7 @@ unpackTo(_o: OrderResponseT): void {
   _o.clientId = this.clientId();
   _o.execId = this.execId();
   _o.symbolId = this.symbolId();
+  _o.side = this.side();
   _o.p = this.p();
   _o.q = this.q();
   _o.rejectCode = this.rejectCode();
@@ -151,6 +164,7 @@ constructor(
   public clientId: number = 0,
   public execId: bigint = BigInt('0'),
   public symbolId: number = 0,
+  public side: Side = Side.Buy,
   public p: bigint = BigInt('0'),
   public q: bigint = BigInt('0'),
   public rejectCode: RejectCode = RejectCode.None
@@ -164,6 +178,7 @@ pack(builder:flatbuffers.Builder): flatbuffers.Offset {
     this.clientId,
     this.execId,
     this.symbolId,
+    this.side,
     this.p,
     this.q,
     this.rejectCode
