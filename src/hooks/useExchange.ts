@@ -95,10 +95,15 @@ export function useExchange() {
 
       if (side !== Side.None) {
         const fillQty = side === Side.Buy ? q : -q;
+        const cashQty = -(fillQty * p);
         setPositions(pPrev => {
           const pNext = new Map(pPrev);
-          const current = pNext.get(sId) || 0n;
-          pNext.set(sId, current + fillQty);
+          // Update Traded Symbol
+          const currentSym = pNext.get(sId) || 0n;
+          pNext.set(sId, currentSym + fillQty);
+          // Update CASH (Symbol 0)
+          const currentCash = pNext.get(0) || 0n;
+          pNext.set(0, currentCash + cashQty);
           return pNext;
         });
       }
@@ -124,16 +129,23 @@ export function useExchange() {
       addMgmtLog('Connected');
       setConnected(prev => ({ ...prev, mgmt: true }));
       ws.send(`sub ${clientId}`);
-      const builder = new flatbuffers.Builder(1024);
-      PositionRequest.startPositionRequest(builder);
-      PositionRequest.addClientId(builder, parseInt(clientId));
-      PositionRequest.addSymbolId(builder, parseInt(symbolId));
-      const offset = PositionRequest.endPositionRequest(builder);
-      ClientRequest.startClientRequest(builder);
-      ClientRequest.addDataType(builder, ClientReqData.PositionRequest);
-      ClientRequest.addData(builder, offset);
-      builder.finish(ClientRequest.endClientRequest(builder));
-      ws.send(builder.asUint8Array() as any);
+      
+      const sendPositionReq = (sId: number) => {
+        const builder = new flatbuffers.Builder(1024);
+        PositionRequest.startPositionRequest(builder);
+        PositionRequest.addClientId(builder, parseInt(clientId));
+        PositionRequest.addSymbolId(builder, sId);
+        const offset = PositionRequest.endPositionRequest(builder);
+        ClientRequest.startClientRequest(builder);
+        ClientRequest.addDataType(builder, ClientReqData.PositionRequest);
+        ClientRequest.addData(builder, offset);
+        builder.finish(ClientRequest.endClientRequest(builder));
+        ws.send(builder.asUint8Array() as any);
+      };
+
+      // Request for CASH (0) and Traded Symbol (symbolId)
+      sendPositionReq(0);
+      sendPositionReq(parseInt(symbolId));
     };
 
     ws.onmessage = (event) => {

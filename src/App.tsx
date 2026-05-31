@@ -65,7 +65,7 @@ function App() {
     <div className="App" style={{ padding: '20px', fontFamily: 'monospace', backgroundColor: '#1e1e1e', color: '#d4d4d4', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontSize: '11px', textAlign: 'left', position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <h1 style={{ color: '#569cd6', margin: 0, fontSize: '16px' }}>Exchange Monitor</h1>
+          <h1 style={{ color: '#569cd6', margin: 0, fontSize: '16px' }}>Harvey Exchange</h1>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <span>Client ID:</span>
             <input type="text" value={clientId} onChange={(e) => setClientId(e.target.value)} style={{ width: '40px', backgroundColor: '#333', color: '#fff', border: '1px solid #555', padding: '2px 4px', fontSize: '11px' }} />
