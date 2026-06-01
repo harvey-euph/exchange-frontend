@@ -11,8 +11,8 @@ import './App.css';
 function App() {
   const [clientId, setClientId] = useState('101');
   const [symbolId, setSymbolId] = useState('1');
-  const [price, setPrice] = useState('100');
-  const [quantity, setQuantity] = useState('10');
+  const [price, setPrice] = useState('5000');
+  const [quantity, setQuantity] = useState('100');
   const [modQty, setModQty] = useState<Record<string, string>>({});
   
   const [showMgmtLogs, setShowMgmtLogs] = useState(false);
@@ -81,12 +81,15 @@ function App() {
       </div>
 
       <div style={{ display: 'flex', gap: '20px', flex: 1, minHeight: 0 }}>
-        <OrderBook bids={sortedBids} asks={sortedAsks} />
+        <OrderBook 
+          symbolId={symbolId} onSymbolChange={setSymbolId}
+          bids={sortedBids} asks={sortedAsks} onPriceClick={setPrice} 
+        />
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <OrderEntry 
-            symbolId={symbolId} price={price} quantity={quantity}
-            setSymbolId={setSymbolId} setPrice={setPrice} setQuantity={setQuantity}
+            price={price} quantity={quantity}
+            setPrice={setPrice} setQuantity={setQuantity}
             onSendOrder={handleSendOrder}
           />
 

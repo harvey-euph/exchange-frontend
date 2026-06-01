@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import * as flatbuffers from 'flatbuffers';
 import { L2Update } from '../fbs/exchange/l2-update';
 import { ClientResponse } from '../fbs/exchange/client-response';
@@ -25,19 +25,21 @@ export function useExchange() {
   const inflightOrdersRef = useRef<Map<string, { side: Side, symbolId: number }>>(new Map());
   const orderMetadataRef = useRef<Map<string, { side: Side, symbolId: number }>>(new Map());
   const nextExecId = useRef(BigInt(Date.now()));
+  const nextOrderId = useRef(BigInt(Date.now()) * 1000n);
 
   const [mgmtMessages, setMgmtMessages] = useState<string[]>([]);
   const [l2Messages, setL2Messages] = useState<string[]>([]);
 
   const mgmtWsRef = useRef<WebSocket | null>(null);
   const l2WsRef = useRef<WebSocket | null>(null);
+  const l2RetryTimeoutRef = useRef<number | null>(null);
 
   const addMgmtLog = useCallback((msg: string) => {
-    setMgmtMessages(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`].slice(-200));
+    setMgmtMessages(prev => [...prev, `${new Date().toLocaleTimeString('en-US')} - ${msg}`].slice(-200));
   }, []);
 
   const addL2Log = useCallback((msg: string) => {
-    setL2Messages(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`].slice(-200));
+    setL2Messages(prev => [...prev, `${new Date().toLocaleTimeString('en-US')} - ${msg}`].slice(-200));
   }, []);
 
   const handleOrderResponse = useCallback((resp: OrderResponse) => {
@@ -51,7 +53,7 @@ export function useExchange() {
     const rejectCode = resp.rejectCode();
     
     const execName = ExecType[execType] ?? `Unknown(${execType})`;
-    addMgmtLog(`[Exec] ID=${orderId} Type=${execName} Side=${Side[side]} P=${p} Q=${q} ExecID=${execId}`);
+    addMgmtLog(`[Exec] ClientID=${resp.clientId()} ID=${orderId} Type=${execName} Side=${Side[side]} P=${p} Q=${q} ExecID=${execId}`);
 
     if (rejectCode !== 0) {
       addMgmtLog(`[Error] Order Rejected: ID=${orderId} Code=${rejectCode}`);
@@ -120,13 +122,13 @@ export function useExchange() {
     if (mgmtWsRef.current) mgmtWsRef.current.close();
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${protocol}//${window.location.host}/ws-mgmt`;
-    addMgmtLog(`Connecting to Management WS (9001)...`);
+    addMgmtLog(`Connecting to Management WS (9001) ClientID=${clientId}...`);
     const ws = new WebSocket(url);
     ws.binaryType = 'arraybuffer';
     mgmtWsRef.current = ws;
 
     ws.onopen = () => {
-      addMgmtLog('Connected');
+      addMgmtLog(`Connected ClientID=${clientId}`);
       setConnected(prev => ({ ...prev, mgmt: true }));
       ws.send(`sub ${clientId}`);
       
@@ -175,6 +177,10 @@ export function useExchange() {
   }, [addMgmtLog, handleOrderResponse]);
 
   const connectL2 = useCallback(() => {
+    if (l2RetryTimeoutRef.current) {
+      clearTimeout(l2RetryTimeoutRef.current);
+      l2RetryTimeoutRef.current = null;
+    }
     if (l2WsRef.current) l2WsRef.current.close();
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${protocol}//${window.location.host}/ws-l2`;
@@ -203,13 +209,30 @@ export function useExchange() {
         }
       } catch (err) { addL2Log(`Decode Error: ${err}`); }
     };
-    ws.onclose = (e) => { addL2Log(`Disconnected (Code: ${e.code})`); setConnected(prev => ({ ...prev, l2: false })); l2WsRef.current = null; };
+    ws.onclose = (e) => { 
+      addL2Log(`Disconnected (Code: ${e.code}). Retrying in 2s...`); 
+      setConnected(prev => ({ ...prev, l2: false })); 
+      l2WsRef.current = null; 
+      l2RetryTimeoutRef.current = window.setTimeout(connectL2, 2000);
+    };
     ws.onerror = () => addL2Log(`WebSocket Error`);
   }, [addL2Log]);
+
+  useEffect(() => {
+    connectL2();
+    return () => {
+      if (l2WsRef.current) l2WsRef.current.close();
+      if (l2RetryTimeoutRef.current) clearTimeout(l2RetryTimeoutRef.current);
+    };
+  }, [connectL2]);
 
   const disconnectAll = useCallback(() => {
     mgmtWsRef.current?.close();
     l2WsRef.current?.close();
+    if (l2RetryTimeoutRef.current) {
+      clearTimeout(l2RetryTimeoutRef.current);
+      l2RetryTimeoutRef.current = null;
+    }
   }, []);
 
   const sendOrder = useCallback(async (side: Side, clientId: string, symbolId: string, price: string, quantity: string) => {
@@ -218,11 +241,12 @@ export function useExchange() {
     }
     const builder = new flatbuffers.Builder(1024);
     const qVal = BigInt(quantity); const execId = nextExecId.current++;
+    const orderId = nextOrderId.current++;
     inflightOrdersRef.current.set(execId.toString(), { side, symbolId: parseInt(symbolId) });
     OrderRequest.startOrderRequest(builder);
     OrderRequest.addAction(builder, OrderAction.New);
     OrderRequest.addExecId(builder, execId);
-    OrderRequest.addOrderId(builder, BigInt(0));
+    OrderRequest.addOrderId(builder, orderId);
     OrderRequest.addClientId(builder, parseInt(clientId));
     OrderRequest.addSymbolId(builder, parseInt(symbolId));
     OrderRequest.addSide(builder, side);
@@ -237,7 +261,7 @@ export function useExchange() {
     ClientRequest.addData(builder, off);
     builder.finish(ClientRequest.endClientRequest(builder));
     try {
-      addMgmtLog(`Sending ${Side[side]} order: P=${price} Q=${quantity} ExecID=${execId}`);
+      addMgmtLog(`Sending ${Side[side]} order: ClientID=${clientId} P=${price} Q=${quantity} ID=${orderId} ExecID=${execId}`);
       mgmtWsRef.current.send(builder.asUint8Array() as any);
     } catch (err) { addMgmtLog(`Order send error: ${err}`); }
   }, [addMgmtLog]);
@@ -259,7 +283,7 @@ export function useExchange() {
     ClientRequest.addDataType(builder, ClientReqData.OrderRequest);
     ClientRequest.addData(builder, off);
     builder.finish(ClientRequest.endClientRequest(builder));
-    addMgmtLog(`Cancelling Order: ID=${order.orderId} ExecID=${execId}`)
+    addMgmtLog(`Cancelling Order: ClientID=${clientId} ID=${order.orderId} ExecID=${execId}`)
     mgmtWsRef.current.send(builder.asUint8Array() as any)
   }, [addMgmtLog]);
 
@@ -282,7 +306,7 @@ export function useExchange() {
     ClientRequest.addDataType(builder, ClientReqData.OrderRequest);
     ClientRequest.addData(builder, off);
     builder.finish(ClientRequest.endClientRequest(builder));
-    addMgmtLog(`Modifying Order: ID=${order.orderId} NewQ=${newQty} ExecID=${execId}`)
+    addMgmtLog(`Modifying Order: ClientID=${clientId} ID=${order.orderId} NewQ=${newQty} ExecID=${execId}`)
     mgmtWsRef.current.send(builder.asUint8Array() as any)
   }, [addMgmtLog]);
 
