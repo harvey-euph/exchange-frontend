@@ -7,7 +7,7 @@ import { OrderType } from '../exchange/order-type.js';
 import { Side } from '../exchange/side.js';
 
 
-export class OrderRequest implements flatbuffers.IUnpackableObject<OrderRequestT> {
+export class OrderRequest {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):OrderRequest {
@@ -147,69 +147,5 @@ static createOrderRequest(builder:flatbuffers.Builder, action:OrderAction, execI
   OrderRequest.addVisibleQty(builder, visibleQty);
   OrderRequest.addTimestamp(builder, timestamp);
   return OrderRequest.endOrderRequest(builder);
-}
-
-unpack(): OrderRequestT {
-  return new OrderRequestT(
-    this.action(),
-    this.execId(),
-    this.orderId(),
-    this.clientId(),
-    this.symbolId(),
-    this.side(),
-    this.type(),
-    this.p(),
-    this.q(),
-    this.visibleQty(),
-    this.timestamp()
-  );
-}
-
-
-unpackTo(_o: OrderRequestT): void {
-  _o.action = this.action();
-  _o.execId = this.execId();
-  _o.orderId = this.orderId();
-  _o.clientId = this.clientId();
-  _o.symbolId = this.symbolId();
-  _o.side = this.side();
-  _o.type = this.type();
-  _o.p = this.p();
-  _o.q = this.q();
-  _o.visibleQty = this.visibleQty();
-  _o.timestamp = this.timestamp();
-}
-}
-
-export class OrderRequestT implements flatbuffers.IGeneratedObject {
-constructor(
-  public action: OrderAction = OrderAction.New,
-  public execId: bigint = BigInt('0'),
-  public orderId: bigint = BigInt('0'),
-  public clientId: number = 0,
-  public symbolId: number = 0,
-  public side: Side = Side.Buy,
-  public type: OrderType = OrderType.Limit,
-  public p: bigint = BigInt('0'),
-  public q: bigint = BigInt('0'),
-  public visibleQty: bigint = BigInt('0'),
-  public timestamp: bigint = BigInt('0')
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  return OrderRequest.createOrderRequest(builder,
-    this.action,
-    this.execId,
-    this.orderId,
-    this.clientId,
-    this.symbolId,
-    this.side,
-    this.type,
-    this.p,
-    this.q,
-    this.visibleQty,
-    this.timestamp
-  );
 }
 }

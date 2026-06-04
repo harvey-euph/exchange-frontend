@@ -2,9 +2,7 @@
 
 import * as flatbuffers from 'flatbuffers';
 
-
-
-export class OrderStatusRequest implements flatbuffers.IUnpackableObject<OrderStatusRequestT> {
+export class OrderStatusRequest {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):OrderStatusRequest {
@@ -54,33 +52,5 @@ static createOrderStatusRequest(builder:flatbuffers.Builder, clientId:number, or
   OrderStatusRequest.addClientId(builder, clientId);
   OrderStatusRequest.addOrderId(builder, orderId);
   return OrderStatusRequest.endOrderStatusRequest(builder);
-}
-
-unpack(): OrderStatusRequestT {
-  return new OrderStatusRequestT(
-    this.clientId(),
-    this.orderId()
-  );
-}
-
-
-unpackTo(_o: OrderStatusRequestT): void {
-  _o.clientId = this.clientId();
-  _o.orderId = this.orderId();
-}
-}
-
-export class OrderStatusRequestT implements flatbuffers.IGeneratedObject {
-constructor(
-  public clientId: number = 0,
-  public orderId: bigint = BigInt('0')
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  return OrderStatusRequest.createOrderStatusRequest(builder,
-    this.clientId,
-    this.orderId
-  );
 }
 }

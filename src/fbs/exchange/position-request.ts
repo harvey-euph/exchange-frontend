@@ -2,9 +2,7 @@
 
 import * as flatbuffers from 'flatbuffers';
 
-
-
-export class PositionRequest implements flatbuffers.IUnpackableObject<PositionRequestT> {
+export class PositionRequest {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):PositionRequest {
@@ -54,33 +52,5 @@ static createPositionRequest(builder:flatbuffers.Builder, clientId:number, symbo
   PositionRequest.addClientId(builder, clientId);
   PositionRequest.addSymbolId(builder, symbolId);
   return PositionRequest.endPositionRequest(builder);
-}
-
-unpack(): PositionRequestT {
-  return new PositionRequestT(
-    this.clientId(),
-    this.symbolId()
-  );
-}
-
-
-unpackTo(_o: PositionRequestT): void {
-  _o.clientId = this.clientId();
-  _o.symbolId = this.symbolId();
-}
-}
-
-export class PositionRequestT implements flatbuffers.IGeneratedObject {
-constructor(
-  public clientId: number = 0,
-  public symbolId: number = 0
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  return PositionRequest.createPositionRequest(builder,
-    this.clientId,
-    this.symbolId
-  );
 }
 }

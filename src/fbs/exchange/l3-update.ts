@@ -6,7 +6,7 @@ import { ExecType } from '../exchange/exec-type.js';
 import { Side } from '../exchange/side.js';
 
 
-export class L3Update implements flatbuffers.IUnpackableObject<L3UpdateT> {
+export class L3Update {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):L3Update {
@@ -116,57 +116,5 @@ static createL3Update(builder:flatbuffers.Builder, symbolId:number, execType:Exe
   L3Update.addQ(builder, q);
   L3Update.addTimestamp(builder, timestamp);
   return L3Update.endL3Update(builder);
-}
-
-unpack(): L3UpdateT {
-  return new L3UpdateT(
-    this.symbolId(),
-    this.execType(),
-    this.seqNum(),
-    this.orderId(),
-    this.side(),
-    this.p(),
-    this.q(),
-    this.timestamp()
-  );
-}
-
-
-unpackTo(_o: L3UpdateT): void {
-  _o.symbolId = this.symbolId();
-  _o.execType = this.execType();
-  _o.seqNum = this.seqNum();
-  _o.orderId = this.orderId();
-  _o.side = this.side();
-  _o.p = this.p();
-  _o.q = this.q();
-  _o.timestamp = this.timestamp();
-}
-}
-
-export class L3UpdateT implements flatbuffers.IGeneratedObject {
-constructor(
-  public symbolId: number = 0,
-  public execType: ExecType = ExecType.New,
-  public seqNum: bigint = BigInt('0'),
-  public orderId: bigint = BigInt('0'),
-  public side: Side = Side.Buy,
-  public p: bigint = BigInt('0'),
-  public q: bigint = BigInt('0'),
-  public timestamp: bigint = BigInt('0')
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  return L3Update.createL3Update(builder,
-    this.symbolId,
-    this.execType,
-    this.seqNum,
-    this.orderId,
-    this.side,
-    this.p,
-    this.q,
-    this.timestamp
-  );
 }
 }

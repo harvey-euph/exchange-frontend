@@ -69,7 +69,7 @@ function App() {
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <span>Client ID:</span>
             <input type="text" value={clientId} onChange={(e) => setClientId(e.target.value)} style={{ width: '40px', backgroundColor: '#333', color: '#fff', border: '1px solid #555', padding: '2px 4px', fontSize: '11px' }} />
-            <button onClick={() => connectMgmt(clientId, symbolId)} style={{ backgroundColor: connected.mgmt ? '#2d5a27' : '#444', fontSize: '10px', padding: '2px 6px', cursor: 'pointer', border: '1px solid #555', color: '#fff' }}>{connected.mgmt ? 'Reconnect Mgmt' : 'Connect Mgmt'}</button>
+            <button onClick={() => connectMgmt(clientId, symbolId)} style={{ backgroundColor: connected.mgmtReady ? "#2d5a27" : (connected.mgmt ? "#a58e27" : "#444"), fontSize: "10px", padding: "2px 6px", cursor: "pointer", border: "1px solid #555", color: "#fff" }}>{connected.mgmt ? (connected.mgmtReady ? "Mgmt Ready" : "Mgmt Syncing...") : "Connect Mgmt"}</button>
             <button onClick={connectL2} style={{ backgroundColor: connected.l2 ? '#2d5a27' : '#444', fontSize: '10px', padding: '2px 6px', cursor: 'pointer', border: '1px solid #555', color: '#fff' }}>{connected.l2 ? 'Reconnect L2' : 'Connect L2'}</button>
             <button onClick={disconnectAll} style={{ backgroundColor: '#5a2727', fontSize: '10px', padding: '2px 6px', cursor: 'pointer', border: '1px solid #555', color: '#fff' }}>Disconnect All</button>
           </div>

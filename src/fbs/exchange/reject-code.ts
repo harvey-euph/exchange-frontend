@@ -6,5 +6,6 @@ export enum RejectCode {
   PriceInvalid = 1,
   OrderNotFound = 2,
   InvalidAction = 3,
-  InvalidModify = 4
+  InvalidModify = 4,
+  DuplicateOrderID = 5
 }

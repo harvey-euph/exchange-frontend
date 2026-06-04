@@ -7,7 +7,7 @@ import { RejectCode } from '../exchange/reject-code.js';
 import { Side } from '../exchange/side.js';
 
 
-export class OrderResponse implements flatbuffers.IUnpackableObject<OrderResponseT> {
+export class OrderResponse {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):OrderResponse {
@@ -127,61 +127,5 @@ static createOrderResponse(builder:flatbuffers.Builder, execType:ExecType, order
   OrderResponse.addQ(builder, q);
   OrderResponse.addRejectCode(builder, rejectCode);
   return OrderResponse.endOrderResponse(builder);
-}
-
-unpack(): OrderResponseT {
-  return new OrderResponseT(
-    this.execType(),
-    this.orderId(),
-    this.clientId(),
-    this.execId(),
-    this.symbolId(),
-    this.side(),
-    this.p(),
-    this.q(),
-    this.rejectCode()
-  );
-}
-
-
-unpackTo(_o: OrderResponseT): void {
-  _o.execType = this.execType();
-  _o.orderId = this.orderId();
-  _o.clientId = this.clientId();
-  _o.execId = this.execId();
-  _o.symbolId = this.symbolId();
-  _o.side = this.side();
-  _o.p = this.p();
-  _o.q = this.q();
-  _o.rejectCode = this.rejectCode();
-}
-}
-
-export class OrderResponseT implements flatbuffers.IGeneratedObject {
-constructor(
-  public execType: ExecType = ExecType.New,
-  public orderId: bigint = BigInt('0'),
-  public clientId: number = 0,
-  public execId: bigint = BigInt('0'),
-  public symbolId: number = 0,
-  public side: Side = Side.Buy,
-  public p: bigint = BigInt('0'),
-  public q: bigint = BigInt('0'),
-  public rejectCode: RejectCode = RejectCode.None
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  return OrderResponse.createOrderResponse(builder,
-    this.execType,
-    this.orderId,
-    this.clientId,
-    this.execId,
-    this.symbolId,
-    this.side,
-    this.p,
-    this.q,
-    this.rejectCode
-  );
 }
 }

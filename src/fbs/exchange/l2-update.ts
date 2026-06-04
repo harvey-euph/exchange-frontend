@@ -5,7 +5,7 @@ import * as flatbuffers from 'flatbuffers';
 import { Side } from '../exchange/side.js';
 
 
-export class L2Update implements flatbuffers.IUnpackableObject<L2UpdateT> {
+export class L2Update {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):L2Update {
@@ -95,49 +95,5 @@ static createL2Update(builder:flatbuffers.Builder, symbolId:number, seqNum:bigin
   L2Update.addQ(builder, q);
   L2Update.addTimestamp(builder, timestamp);
   return L2Update.endL2Update(builder);
-}
-
-unpack(): L2UpdateT {
-  return new L2UpdateT(
-    this.symbolId(),
-    this.seqNum(),
-    this.side(),
-    this.p(),
-    this.q(),
-    this.timestamp()
-  );
-}
-
-
-unpackTo(_o: L2UpdateT): void {
-  _o.symbolId = this.symbolId();
-  _o.seqNum = this.seqNum();
-  _o.side = this.side();
-  _o.p = this.p();
-  _o.q = this.q();
-  _o.timestamp = this.timestamp();
-}
-}
-
-export class L2UpdateT implements flatbuffers.IGeneratedObject {
-constructor(
-  public symbolId: number = 0,
-  public seqNum: bigint = BigInt('0'),
-  public side: Side = Side.Buy,
-  public p: bigint = BigInt('0'),
-  public q: bigint = BigInt('0'),
-  public timestamp: bigint = BigInt('0')
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  return L2Update.createL2Update(builder,
-    this.symbolId,
-    this.seqNum,
-    this.side,
-    this.p,
-    this.q,
-    this.timestamp
-  );
 }
 }

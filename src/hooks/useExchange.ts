@@ -16,7 +16,7 @@ import { PositionRequest } from '../fbs/exchange/position-request';
 import type { OrderData, ConnectedState } from '../types';
 
 export function useExchange() {
-  const [connected, setConnected] = useState<ConnectedState>({ mgmt: false, l2: false });
+  const [connected, setConnected] = useState<ConnectedState>({ mgmt: false, mgmtReady: false, l2: false });
   const [bids, setBids] = useState<Map<bigint, bigint>>(new Map());
   const [asks, setAsks] = useState<Map<bigint, bigint>>(new Map());
   const [openOrders, setOpenOrders] = useState<Map<string, OrderData>>(new Map());
@@ -51,9 +51,15 @@ export function useExchange() {
     const sId = resp.symbolId();
     const side = resp.side();
     const rejectCode = resp.rejectCode();
+
+    if (execType === ExecType.Complete) {
+      setConnected(prev => ({ ...prev, mgmtReady: true }));
+      addMgmtLog('[System] Management session ready');
+      return;
+    }
     
     const execName = ExecType[execType] ?? `Unknown(${execType})`;
-    addMgmtLog(`[Exec] ClientID=${resp.clientId()} ID=${orderId} Type=${execName} Side=${Side[side]} P=${p} Q=${q} ExecID=${execId}`);
+    addMgmtLog(`[Exec] ID=${orderId} Type=${execName} Side=${Side[side]} P=${p} Q=${q} ExecID=${execId}`);
 
     if (rejectCode !== 0) {
       addMgmtLog(`[Error] Order Rejected: ID=${orderId} Code=${rejectCode}`);
@@ -64,7 +70,7 @@ export function useExchange() {
       orderMetadataRef.current.set(orderId, { side, symbolId: sId });
     }
 
-    if (execType === ExecType.New) {
+    if (execType === ExecType.New || execType === ExecType.OrderStatus) {
       setOpenOrders(prev => {
         const next = new Map(prev);
         if (!next.has(orderId)) {
@@ -128,6 +134,8 @@ export function useExchange() {
     mgmtWsRef.current = ws;
 
     ws.onopen = () => {
+      setOpenOrders(new Map());
+      setPositions(new Map());
       addMgmtLog(`Connected ClientID=${clientId}`);
       setConnected(prev => ({ ...prev, mgmt: true }));
       ws.send(`sub ${clientId}`);
@@ -146,8 +154,8 @@ export function useExchange() {
       };
 
       // Request for CASH (0) and Traded Symbol (symbolId)
-      sendPositionReq(0);
-      sendPositionReq(parseInt(symbolId));
+      // sendPositionReq(0);
+      // sendPositionReq(parseInt(symbolId));
     };
 
     ws.onmessage = (event) => {
@@ -172,7 +180,7 @@ export function useExchange() {
         }
       } catch (err) { addMgmtLog(`Decode Error: ${err}`); }
     };
-    ws.onclose = (e) => { addMgmtLog(`Disconnected (Code: ${e.code})`); setConnected(prev => ({ ...prev, mgmt: false })); mgmtWsRef.current = null; };
+    ws.onclose = (e) => { addMgmtLog(`Disconnected (Code: ${e.code})`); setConnected(prev => ({ ...prev, mgmt: false, mgmtReady: false })); mgmtWsRef.current = null; };
     ws.onerror = () => addMgmtLog(`WebSocket Error`);
   }, [addMgmtLog, handleOrderResponse]);
 
@@ -190,6 +198,8 @@ export function useExchange() {
     l2WsRef.current = ws;
 
     ws.onopen = () => {
+      setOpenOrders(new Map());
+      setPositions(new Map());
       addL2Log('Connected');
       setConnected(prev => ({ ...prev, l2: true }));
       ws.send('sub 1');

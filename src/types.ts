@@ -11,5 +11,6 @@ export interface OrderData {
 
 export interface ConnectedState {
   mgmt: boolean;
+  mgmtReady: boolean;
   l2: boolean;
 }

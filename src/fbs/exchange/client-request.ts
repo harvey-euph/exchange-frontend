@@ -3,12 +3,9 @@
 import * as flatbuffers from 'flatbuffers';
 
 import { ClientRequestData, unionToClientRequestData, unionListToClientRequestData } from '../exchange/client-request-data.js';
-import { OrderRequest, OrderRequestT } from '../exchange/order-request.js';
-import { OrderStatusRequest, OrderStatusRequestT } from '../exchange/order-status-request.js';
-import { PositionRequest, PositionRequestT } from '../exchange/position-request.js';
 
 
-export class ClientRequest implements flatbuffers.IUnpackableObject<ClientRequestT> {
+export class ClientRequest {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):ClientRequest {
@@ -58,43 +55,5 @@ static createClientRequest(builder:flatbuffers.Builder, dataType:ClientRequestDa
   ClientRequest.addDataType(builder, dataType);
   ClientRequest.addData(builder, dataOffset);
   return ClientRequest.endClientRequest(builder);
-}
-
-unpack(): ClientRequestT {
-  return new ClientRequestT(
-    this.dataType(),
-    (() => {
-      const temp = unionToClientRequestData(this.dataType(), this.data.bind(this));
-      if(temp === null) { return null; }
-      return temp.unpack()
-  })()
-  );
-}
-
-
-unpackTo(_o: ClientRequestT): void {
-  _o.dataType = this.dataType();
-  _o.data = (() => {
-      const temp = unionToClientRequestData(this.dataType(), this.data.bind(this));
-      if(temp === null) { return null; }
-      return temp.unpack()
-  })();
-}
-}
-
-export class ClientRequestT implements flatbuffers.IGeneratedObject {
-constructor(
-  public dataType: ClientRequestData = ClientRequestData.NONE,
-  public data: OrderRequestT|OrderStatusRequestT|PositionRequestT|null = null
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  const data = builder.createObjectOffset(this.data);
-
-  return ClientRequest.createClientRequest(builder,
-    this.dataType,
-    data
-  );
 }
 }

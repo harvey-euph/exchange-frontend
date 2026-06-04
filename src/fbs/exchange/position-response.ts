@@ -2,9 +2,7 @@
 
 import * as flatbuffers from 'flatbuffers';
 
-
-
-export class PositionResponse implements flatbuffers.IUnpackableObject<PositionResponseT> {
+export class PositionResponse {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):PositionResponse {
@@ -64,37 +62,5 @@ static createPositionResponse(builder:flatbuffers.Builder, clientId:number, symb
   PositionResponse.addSymbolId(builder, symbolId);
   PositionResponse.addPosition(builder, position);
   return PositionResponse.endPositionResponse(builder);
-}
-
-unpack(): PositionResponseT {
-  return new PositionResponseT(
-    this.clientId(),
-    this.symbolId(),
-    this.position()
-  );
-}
-
-
-unpackTo(_o: PositionResponseT): void {
-  _o.clientId = this.clientId();
-  _o.symbolId = this.symbolId();
-  _o.position = this.position();
-}
-}
-
-export class PositionResponseT implements flatbuffers.IGeneratedObject {
-constructor(
-  public clientId: number = 0,
-  public symbolId: number = 0,
-  public position: bigint = BigInt('0')
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  return PositionResponse.createPositionResponse(builder,
-    this.clientId,
-    this.symbolId,
-    this.position
-  );
 }
 }

@@ -5,5 +5,7 @@ export enum ExecType {
   PartialFill = 1,
   Fill = 2,
   Cancelled = 4,
-  Replaced = 5
+  Replaced = 5,
+  OrderStatus = 6,
+  Complete = 7
 }

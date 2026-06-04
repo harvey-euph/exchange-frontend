@@ -2,10 +2,10 @@
 
 import * as flatbuffers from 'flatbuffers';
 
-import { L3Update, L3UpdateT } from '../exchange/l3-update.js';
+import { L3Update } from '../exchange/l3-update.js';
 
 
-export class L3Batch implements flatbuffers.IUnpackableObject<L3BatchT> {
+export class L3Batch {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):L3Batch {
@@ -80,35 +80,5 @@ static createL3Batch(builder:flatbuffers.Builder, seqNum:bigint, updatesOffset:f
   L3Batch.addSeqNum(builder, seqNum);
   L3Batch.addUpdates(builder, updatesOffset);
   return L3Batch.endL3Batch(builder);
-}
-
-unpack(): L3BatchT {
-  return new L3BatchT(
-    this.seqNum(),
-    this.bb!.createObjList<L3Update, L3UpdateT>(this.updates.bind(this), this.updatesLength())
-  );
-}
-
-
-unpackTo(_o: L3BatchT): void {
-  _o.seqNum = this.seqNum();
-  _o.updates = this.bb!.createObjList<L3Update, L3UpdateT>(this.updates.bind(this), this.updatesLength());
-}
-}
-
-export class L3BatchT implements flatbuffers.IGeneratedObject {
-constructor(
-  public seqNum: bigint = BigInt('0'),
-  public updates: (L3UpdateT)[] = []
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  const updates = L3Batch.createUpdatesVector(builder, builder.createObjectOffsetList(this.updates));
-
-  return L3Batch.createL3Batch(builder,
-    this.seqNum,
-    updates
-  );
 }
 }

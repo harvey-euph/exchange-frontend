@@ -3,11 +3,9 @@
 import * as flatbuffers from 'flatbuffers';
 
 import { ClientResponseData, unionToClientResponseData, unionListToClientResponseData } from '../exchange/client-response-data.js';
-import { OrderResponse, OrderResponseT } from '../exchange/order-response.js';
-import { PositionResponse, PositionResponseT } from '../exchange/position-response.js';
 
 
-export class ClientResponse implements flatbuffers.IUnpackableObject<ClientResponseT> {
+export class ClientResponse {
   bb: flatbuffers.ByteBuffer|null = null;
   bb_pos = 0;
   __init(i:number, bb:flatbuffers.ByteBuffer):ClientResponse {
@@ -57,43 +55,5 @@ static createClientResponse(builder:flatbuffers.Builder, dataType:ClientResponse
   ClientResponse.addDataType(builder, dataType);
   ClientResponse.addData(builder, dataOffset);
   return ClientResponse.endClientResponse(builder);
-}
-
-unpack(): ClientResponseT {
-  return new ClientResponseT(
-    this.dataType(),
-    (() => {
-      const temp = unionToClientResponseData(this.dataType(), this.data.bind(this));
-      if(temp === null) { return null; }
-      return temp.unpack()
-  })()
-  );
-}
-
-
-unpackTo(_o: ClientResponseT): void {
-  _o.dataType = this.dataType();
-  _o.data = (() => {
-      const temp = unionToClientResponseData(this.dataType(), this.data.bind(this));
-      if(temp === null) { return null; }
-      return temp.unpack()
-  })();
-}
-}
-
-export class ClientResponseT implements flatbuffers.IGeneratedObject {
-constructor(
-  public dataType: ClientResponseData = ClientResponseData.NONE,
-  public data: OrderResponseT|PositionResponseT|null = null
-){}
-
-
-pack(builder:flatbuffers.Builder): flatbuffers.Offset {
-  const data = builder.createObjectOffset(this.data);
-
-  return ClientResponse.createClientResponse(builder,
-    this.dataType,
-    data
-  );
 }
 }
