@@ -122,3 +122,233 @@
 .custom-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+/* Notification System */
+.notification-container {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  width: 100%;
+}
+
+.notification-item {
+  width: 50%;
+  max-width: 600px;
+  min-height: 60px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 12px 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  pointer-events: auto;
+  animation: slideInDown 0.3s ease-out forwards, fadeOut 0.3s ease-in 1.2s forwards;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+.notification-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.notification-content {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.notif-acked { border-left: 4px solid var(--accent-green); }
+.notif-rejected { border-left: 4px solid var(--accent-red); }
+.notif-info { border-left: 4px solid var(--accent-blue); }
+
+.notif-title-acked { color: var(--accent-green); }
+.notif-title-rejected { color: var(--accent-red); }
+.notif-title-info { color: var(--accent-blue); }
+
+/* Layout Classes */
+.app-container {
+  padding: 12px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background-color: var(--bg-main);
+}
+
+.header-container {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.main-content {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bottom-row {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 992px) {
+  .main-content {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .header-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .bottom-row {
+    flex-direction: column;
+    flex: none;
+    min-height: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 8px;
+  }
+  
+  .header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+/* Component Specific Responsive Overrides */
+.order-book-container {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+}
+
+.order-entry-controls {
+  display: flex;
+  gap: 32px;
+  align-items: flex-end;
+}
+
+@media (max-width: 992px) {
+  .order-book-container {
+    width: 100%;
+    max-height: 350px;
+  }
+}
+
+@media (max-width: 600px) {
+  .order-entry-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .order-entry-buttons {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .order-entry-buttons button {
+    flex: 1;
+  }
+}
+
+.table-container {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.open-orders-section {
+  flex: 2.5;
+  display: flex;
+  flex-direction: column;
+}
+
+.positions-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 992px) {
+  .open-orders-section, .positions-section {
+    flex: none;
+    width: 100%;
+    min-height: 300px;
+  }
+}

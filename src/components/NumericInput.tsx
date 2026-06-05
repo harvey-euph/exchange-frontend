@@ -7,10 +7,12 @@ interface NumericInputProps {
   className?: string;
   step?: number;
   style?: React.CSSProperties;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
 }
 
 export const NumericInput: React.FC<NumericInputProps> = ({
-  value, onChange, placeholder, className, step = 1, style
+  value, onChange, placeholder, className, step = 1, style, onKeyDown, onBlur
 }) => {
   const updateValue = useCallback((delta: number) => {
     try {
@@ -23,7 +25,7 @@ export const NumericInput: React.FC<NumericInputProps> = ({
     }
   }, [value, onChange]);
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
+  const handleInternalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       updateValue(step);
@@ -31,6 +33,7 @@ export const NumericInput: React.FC<NumericInputProps> = ({
       e.preventDefault();
       updateValue(-step);
     }
+    onKeyDown?.(e);
   };
 
   const onWheel = (e: React.WheelEvent) => {
@@ -47,7 +50,8 @@ export const NumericInput: React.FC<NumericInputProps> = ({
       type="text"
       value={value}
       onChange={e => onChange(e.target.value.replace(/[^0-9]/g, ''))}
-      onKeyDown={onKeyDown}
+      onKeyDown={handleInternalKeyDown}
+      onBlur={onBlur}
       onWheel={onWheel}
       placeholder={placeholder}
       className={`modern-input ${className || ''}`}

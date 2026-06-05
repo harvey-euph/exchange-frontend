@@ -17,7 +17,7 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
   return (
     <div className="modern-card" style={{ padding: '12px' }}>
       <h2 style={{ fontSize: '13px', margin: '0 0 12px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', color: 'var(--text-primary)' }}>Order Entry</h2>
-      <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-end' }}>
+      <div className="order-entry-controls">
         <div style={{ flex: 1, minWidth: '120px' }}>
           <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>Price</div>
           <NumericInput 
@@ -34,7 +34,7 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
             style={{ width: '100%', height: '36px', boxSizing: 'border-box' }} 
           />
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="order-entry-buttons" style={{ display: 'flex', gap: '12px' }}>
           <button 
             className="modern-button btn-buy" 
             onClick={() => onSendOrder(Side.Buy)} 

@@ -20,7 +20,7 @@ export const Positions: React.FC<PositionsProps> = ({ positions, prices }) => {
   }, [positions, prices]);
 
   return (
-    <div className="modern-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <div className="modern-card positions-section">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
         <h2 style={{ fontSize: '13px', margin: 0, color: 'var(--text-primary)' }}>Positions</h2>
         <div style={{ textAlign: 'right' }}>
@@ -30,7 +30,7 @@ export const Positions: React.FC<PositionsProps> = ({ positions, prices }) => {
           </span>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scroll">
+      <div className="table-container custom-scroll">
         <table className="modern-table">
           <thead>
             <tr>

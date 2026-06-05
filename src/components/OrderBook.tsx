@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface OrderBookProps {
   symbolId: string;
@@ -10,6 +10,9 @@ interface OrderBookProps {
 }
 
 export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, bids, asks, onPriceClick, onReconnectL2 }) => {
+  const [midColor, setMidColor] = useState('var(--text-primary)');
+  const prevMidRef = useRef<bigint | null>(null);
+
   // Take 5 best asks (lowest prices). Since asks is [High ... Low], we take the last 5.
   const displayAsks = asks.slice(-5);
   const paddedAsks = [...Array(Math.max(0, 5 - displayAsks.length)).fill(null), ...displayAsks];
@@ -20,8 +23,23 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
 
   const isCash = symbolId === '0';
 
+  const bestBid = bids[0]?.price;
+  const bestAsk = asks[asks.length - 1]?.price;
+  const currentMid = (bestBid !== undefined && bestAsk !== undefined) ? (bestBid + bestAsk) / 2n : null;
+
+  useEffect(() => {
+    if (currentMid !== null && prevMidRef.current !== null) {
+      if (currentMid > prevMidRef.current) {
+        setMidColor('var(--accent-green)');
+      } else if (currentMid < prevMidRef.current) {
+        setMidColor('var(--accent-red)');
+      }
+    }
+    prevMidRef.current = currentMid;
+  }, [currentMid]);
+
   return (
-    <div className="modern-card" style={{ width: '240px', display: 'flex', flexDirection: 'column' }}>
+    <div className="modern-card order-book-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
         <h2 style={{ fontSize: '13px', margin: 0, color: 'var(--text-primary)' }}>
           {isCash ? 'CASH' : `Order Book: ${symbolId}`}
@@ -70,16 +88,16 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
                 </tr>
               ))}
               
-              <tr style={{ height: '28px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
-                <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-primary)', fontSize: '11px', verticalAlign: 'middle', fontWeight: 600 }}>
-                  {(() => {
-                    const bestBid = bids[0]?.price;
-                    const bestAsk = asks[asks.length - 1]?.price;
-                    if (bestBid !== undefined && bestAsk !== undefined) {
-                      return `MID: ${((bestBid + bestAsk) / 2n).toString()}`;
-                    }
-                    return 'MID: -';
-                  })()}
+              <tr style={{ height: '36px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <td colSpan={3} style={{ 
+                  textAlign: 'center', 
+                  color: midColor, 
+                  fontSize: '18px', 
+                  verticalAlign: 'middle', 
+                  fontWeight: 700,
+                  transition: 'color 0.2s ease'
+                }}>
+                  {currentMid !== null ? currentMid.toString() : '-'}
                 </td>
               </tr>
 

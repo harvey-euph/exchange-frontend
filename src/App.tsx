@@ -1,10 +1,12 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { Side } from './fbs/exchange/side';
 import { useExchange } from './hooks/useExchange';
 import { OrderBook } from './components/OrderBook';
 import { OrderEntry } from './components/OrderEntry';
 import { OpenOrders } from './components/OpenOrders';
 import { Positions } from './components/Positions';
+import { NotificationSystem } from './components/NotificationSystem';
+import type { NotificationSystemRef } from './components/NotificationSystem';
 import './App.css';
 
 function App() {
@@ -12,8 +14,13 @@ function App() {
   const [symbolId, setSymbolId] = useState('1');
   const [price, setPrice] = useState('5000');
   const [quantity, setQuantity] = useState('100');
-  const [modQty, setModQty] = useState<Record<string, string>>({});
   
+  const notifRef = useRef<NotificationSystemRef>(null);
+
+  const handleNotification = useCallback((type: 'acked' | 'rejected' | 'info', title: string, content: string) => {
+    notifRef.current?.addNotification(type, title, content);
+  }, []);
+
   const {
     connected,
     bids,
@@ -27,7 +34,7 @@ function App() {
     sendOrder,
     cancelOrder,
     modifyOrder
-  } = useExchange(parseInt(symbolId));
+  } = useExchange(parseInt(symbolId), handleNotification);
 
   useEffect(() => {
     if (symbolId !== '0') {
@@ -49,26 +56,21 @@ function App() {
 
   const handleSendOrder = (side: Side) => {
     if (!connected.mgmtReady) {
-      alert("please login first");
+      handleNotification('rejected', 'Error', 'Please login first');
       return;
     }
     sendOrder(side, clientId, symbolId, price, quantity);
   };
   
   const handleCancelOrder = (order: any) => cancelOrder(order, clientId);
-  const handleModifyOrder = (order: any) => modifyOrder(order, clientId, modQty[order.orderId] || order.q.toString());
+  const handleModifyOrder = (order: any, newPrice: string, newQty: string) => modifyOrder(order, clientId, newPrice, newQty);
 
   return (
-    <div className="App" style={{ padding: '12px', minHeight: '100vh', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
-      <header style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '12px',
-        paddingBottom: '8px',
-        borderBottom: '1px solid var(--border-color)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+    <div className="app-container">
+      <NotificationSystem ref={notifRef} />
+      
+      <header className="header-container">
+        <div className="header-left">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '28px', height: '28px', backgroundColor: 'var(--accent-blue)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '16px' }}>H</div>
             <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '-0.5px' }}>Harvey Exchange</h1>
@@ -95,7 +97,7 @@ function App() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <div className="header-right">
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: connected.l2 ? 'var(--accent-green)' : 'var(--accent-red)' }} />
             <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>L2 Feed</span>
@@ -107,14 +109,14 @@ function App() {
         </div>
       </header>
 
-      <main style={{ display: 'flex', gap: '12px', flex: 1, minHeight: 0 }}>
+      <main className="main-content">
         <OrderBook 
           symbolId={symbolId} onSymbolChange={setSymbolId}
           bids={sortedBids} asks={sortedAsks} onPriceClick={setPrice} 
           onReconnectL2={connectL2}
         />
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="right-panel">
           <OrderEntry 
             price={price} quantity={quantity}
             setPrice={setPrice} setQuantity={setQuantity}
@@ -122,11 +124,9 @@ function App() {
             disabled={!connected.mgmtReady}
           />
 
-          <div style={{ display: 'flex', gap: '12px', flex: 1, minHeight: 0 }}>
+          <div className="bottom-row">
             <OpenOrders 
               orders={Array.from(openOrders.values())}
-              modQty={modQty}
-              setModQty={setModQty}
               onModify={handleModifyOrder}
               onCancel={handleCancelOrder}
             />

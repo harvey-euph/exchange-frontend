@@ -26,7 +26,7 @@ function hashClientId(id: string): number {
   return (hash >>> 0); // Convert to unsigned 32-bit integer
 }
 
-export function useExchange(activeSymbolId: number) {
+export function useExchange(activeSymbolId: number, onNotification?: (type: 'acked' | 'rejected' | 'info', title: string, content: string) => void) {
   const [connected, setConnected] = useState<ConnectedState>({ mgmt: false, mgmtReady: false, l2: false });
   const [bids, setBids] = useState<Map<bigint, bigint>>(new Map());
   const [asks, setAsks] = useState<Map<bigint, bigint>>(new Map());
@@ -41,8 +41,10 @@ export function useExchange(activeSymbolId: number) {
   const nextOrderId = useRef(BigInt(Date.now()) * 1000n);
 
   const mgmtWsRef = useRef<WebSocket | null>(null);
+  const mgmtRetryTimeoutRef = useRef<number | null>(null);
   const l2WsRef = useRef<WebSocket | null>(null);
   const l2RetryTimeoutRef = useRef<number | null>(null);
+  const lastClientIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     setBids(new Map());
@@ -77,6 +79,7 @@ export function useExchange(activeSymbolId: number) {
     if (execType === ExecType.Complete) {
       setConnected(prev => ({ ...prev, mgmtReady: true }));
       addMgmtLog('[System] Management session ready');
+      onNotification?.('info', 'System', 'Management session ready');
       return;
     }
     
@@ -85,7 +88,20 @@ export function useExchange(activeSymbolId: number) {
 
     if (rejectCode !== 0) {
       addMgmtLog(`[Error] Order Rejected: ID=${orderId} Code=${rejectCode}`);
+      onNotification?.('rejected', 'Order Rejected', `ID: ${orderId} Code: ${rejectCode}`);
       return;
+    }
+
+    if (execType === ExecType.New) {
+      onNotification?.('acked', 'Order Accepted', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
+    } else if (execType === ExecType.Cancelled) {
+      onNotification?.('info', 'Order Cancelled', `ID: ${orderId} has been removed`);
+    } else if (execType === ExecType.Replaced) {
+      onNotification?.('acked', 'Order Modified', `ID: ${orderId} updated to Qty: ${q}`);
+    } else if (execType === ExecType.Fill) {
+      onNotification?.('acked', 'Order Filled', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
+    } else if (execType === ExecType.PartialFill) {
+      onNotification?.('info', 'Partial Fill', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
     }
 
     if (orderId !== '0') {
@@ -144,14 +160,21 @@ export function useExchange(activeSymbolId: number) {
         return next;
       });
     }
-  }, [addMgmtLog]);
+  }, [addMgmtLog, onNotification]);
 
   const connectMgmt = useCallback((clientId: string, symbolId: string) => {
+    if (mgmtRetryTimeoutRef.current) {
+      clearTimeout(mgmtRetryTimeoutRef.current);
+      mgmtRetryTimeoutRef.current = null;
+    }
     if (mgmtWsRef.current) mgmtWsRef.current.close();
+    
+    lastClientIdRef.current = clientId;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${protocol}//${window.location.host}/ws-mgmt`;
     const numericClientId = hashClientId(clientId);
-    addMgmtLog(`Connecting to Management WS (9001) ClientID=${clientId} (Hash=${numericClientId})...`);
+    addMgmtLog(`Connecting to Management WS... ClientID=${clientId}`);
+    
     const ws = new WebSocket(url);
     ws.binaryType = 'arraybuffer';
     mgmtWsRef.current = ws;
@@ -188,7 +211,16 @@ export function useExchange(activeSymbolId: number) {
         }
       } catch (err) { addMgmtLog(`Decode Error: ${err}`); }
     };
-    ws.onclose = (e) => { addMgmtLog(`Disconnected (Code: ${e.code})`); setConnected(prev => ({ ...prev, mgmt: false, mgmtReady: false })); mgmtWsRef.current = null; };
+
+    ws.onclose = (e) => { 
+      addMgmtLog(`Disconnected (Code: ${e.code}). Retrying in 2s...`); 
+      setConnected(prev => ({ ...prev, mgmt: false, mgmtReady: false })); 
+      mgmtWsRef.current = null; 
+      if (lastClientIdRef.current) {
+        mgmtRetryTimeoutRef.current = window.setTimeout(() => connectMgmt(lastClientIdRef.current!, symbolId), 2000);
+      }
+    };
+
     ws.onerror = () => addMgmtLog(`WebSocket Error`);
   }, [addMgmtLog, handleOrderResponse, subscribeL2]);
 
@@ -338,7 +370,7 @@ export function useExchange(activeSymbolId: number) {
     mgmtWsRef.current.send(builder.asUint8Array() as any)
   }, [addMgmtLog]);
 
-  const modifyOrder = useCallback((order: OrderData, clientId: string, newQty: string) => {
+  const modifyOrder = useCallback((order: OrderData, clientId: string, newPrice: string, newQty: string) => {
     if (!mgmtWsRef.current || mgmtWsRef.current.readyState !== WebSocket.OPEN) return;
     const builder = new flatbuffers.Builder(1024);
     const execId = nextExecId.current++;
@@ -350,7 +382,7 @@ export function useExchange(activeSymbolId: number) {
     OrderRequest.addClientId(builder, numericClientId);
     OrderRequest.addSymbolId(builder, order.symbolId);
     OrderRequest.addSide(builder, order.side);
-    OrderRequest.addP(builder, order.p);
+    OrderRequest.addP(builder, BigInt(newPrice));
     OrderRequest.addQ(builder, BigInt(newQty));
     OrderRequest.addTimestamp(builder, BigInt(Date.now()));
     const off = OrderRequest.endOrderRequest(builder);
@@ -358,7 +390,7 @@ export function useExchange(activeSymbolId: number) {
     ClientRequest.addDataType(builder, ClientReqData.OrderRequest);
     ClientRequest.addData(builder, off);
     builder.finish(ClientRequest.endClientRequest(builder));
-    addMgmtLog(`Modifying Order: ClientID=${clientId}(${numericClientId}) ID=${order.orderId} NewQ=${newQty} ExecID=${execId}`)
+    addMgmtLog(`Modifying Order: ClientID=${clientId}(${numericClientId}) ID=${order.orderId} NewP=${newPrice} NewQ=${newQty} ExecID=${execId}`)
     mgmtWsRef.current.send(builder.asUint8Array() as any)
   }, [addMgmtLog]);
 
