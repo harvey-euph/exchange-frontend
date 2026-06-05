@@ -66,8 +66,8 @@ export const LogViewer: React.FC<LogViewerProps> = ({ title, messages, show, onC
   if (!show) return null;
 
   const positionStyle: React.CSSProperties = isMgmt 
-    ? { right: '20px' } 
-    : { left: '20px' };
+    ? { right: '24px' } 
+    : { left: '24px' };
 
   return (
     <div style={{ 
@@ -76,15 +76,16 @@ export const LogViewer: React.FC<LogViewerProps> = ({ title, messages, show, onC
       ...positionStyle, 
       width: `${size.width}px`, 
       height: `${size.height}px`, 
-      backgroundColor: '#1e1e1e', 
-      border: '1px solid #333', 
-      borderRadius: '2px', 
+      backgroundColor: 'var(--bg-card)', 
+      border: '1px solid var(--border-color)', 
+      borderRadius: '8px', 
       display: 'flex', 
       flexDirection: 'column', 
       zIndex: 1000, 
-      boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
-      fontFamily: 'var(--mono), monospace',
-      fontSize: '11px'
+      boxShadow: 'var(--shadow-soft)',
+      fontFamily: 'var(--font-mono)',
+      fontSize: '11px',
+      overflow: 'hidden'
     }}>
       {/* Edge Resizers */}
       <div 
@@ -111,53 +112,49 @@ export const LogViewer: React.FC<LogViewerProps> = ({ title, messages, show, onC
           zIndex: 1001 
         }}
       />
-      <div 
-        onMouseDown={onMouseDown(isMgmt ? 'top-left' : 'top-right')}
-        style={{ 
-          position: 'absolute', 
-          top: '-3px', 
-          [isMgmt ? 'left' : 'right']: '-3px', 
-          width: '10px', 
-          height: '10px', 
-          cursor: isMgmt ? 'nwse-resize' : 'nesw-resize', 
-          zIndex: 1002 
-        }}
-      />
 
       <div style={{ 
-        padding: '4px 10px', 
-        backgroundColor: '#252526', 
-        borderBottom: '1px solid #333',
+        padding: '8px 12px', 
+        backgroundColor: 'var(--bg-input)', 
+        borderBottom: '1px solid var(--border-color)',
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
         userSelect: 'none',
-        color: '#cccccc',
+        color: 'var(--text-primary)',
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
-        fontWeight: 'bold',
+        fontWeight: 600,
         fontSize: '10px'
       }}>
         <span>{title}</span>
         <button onClick={onClose} style={{ 
           background: 'none', 
           border: 'none', 
-          color: '#cccccc', 
+          color: 'var(--text-secondary)', 
           cursor: 'pointer',
-          padding: '0 4px',
-          fontSize: '14px',
-          lineHeight: '1'
-        }}>×</button>
+          padding: '4px',
+          fontSize: '16px',
+          lineHeight: '1',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '4px'
+        }} className="reconnect-btn-modern">×</button>
       </div>
-      <div ref={logRef} className="custom-scrollbar" style={{ 
+      <div ref={logRef} className="custom-scroll" style={{ 
         flex: 1, 
         overflowY: 'auto', 
-        padding: '8px',
-        lineHeight: '1.4'
+        padding: '12px',
+        lineHeight: '1.5',
+        backgroundColor: 'rgba(0,0,0,0.2)'
       }}>
         {messages.map((msg, i) => (
-          <div key={i} style={{ marginBottom: '1px', whiteSpace: 'pre-wrap', color }}>{msg}</div>
+          <div key={i} style={{ marginBottom: '2px', whiteSpace: 'pre-wrap', color }}>{msg}</div>
         ))}
+        {messages.length === 0 && (
+          <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Waiting for logs...</div>
+        )}
       </div>
     </div>
   );

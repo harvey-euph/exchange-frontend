@@ -1,29 +1,80 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface PositionsProps {
   positions: [number, bigint][];
+  prices: Map<number, bigint>;
 }
 
-export const Positions: React.FC<PositionsProps> = ({ positions }) => {
+export const Positions: React.FC<PositionsProps> = ({ positions, prices }) => {
+  const totalValue = useMemo(() => {
+    let value = 0n;
+    for (const [sId, pos] of positions) {
+      if (sId === 0) {
+        value += pos;
+      } else {
+        const price = prices.get(sId) || 0n;
+        value += pos * price;
+      }
+    }
+    return value;
+  }, [positions, prices]);
+
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid #333', borderRadius: '4px', backgroundColor: '#000', padding: '10px' }}>
-      <h2 style={{ fontSize: '12px', margin: '0 0 10px 0', borderBottom: '1px solid #333', paddingBottom: '5px' }}>Positions</h2>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div className="modern-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+        <h2 style={{ fontSize: '13px', margin: 0, color: 'var(--text-primary)' }}>Positions</h2>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginRight: '8px' }}>Total Value:</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 'bold', fontFamily: 'var(--font-mono)' }}>
+            {totalValue.toString()}
+          </span>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scroll">
+        <table className="modern-table">
           <thead>
-            <tr style={{ color: '#888', textAlign: 'left', borderBottom: '1px solid #222' }}>
-              <th>Sym</th><th>Pos</th>
+            <tr>
+              <th>Sym</th>
+              <th style={{ textAlign: 'right' }}>Pos</th>
+              <th style={{ textAlign: 'right' }}>Price</th>
+              <th style={{ textAlign: 'right' }}>Value</th>
             </tr>
           </thead>
           <tbody>
-            {positions.map(([sId, pos]) => (
-              <tr key={sId} style={{ borderBottom: '1px solid #111' }}>
-                <td>{sId}</td>
-                <td style={{ color: pos > 0n ? '#4ec9b0' : pos < 0n ? '#f44747' : '#d4d4d4' }}>{pos.toString()}</td>
-              </tr>
-            ))}
+            {positions.map(([sId, pos]) => {
+              const isCash = sId === 0;
+              const price = isCash ? 1n : (prices.get(sId) || 0n);
+              const value = isCash ? pos : pos * price;
+              return (
+                <tr key={sId} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ color: isCash ? 'var(--accent-blue)' : 'var(--text-primary)', fontWeight: isCash ? 600 : 400 }}>
+                    {isCash ? 'CASH' : sId}
+                  </td>
+                  <td style={{ 
+                    textAlign: 'right',
+                    color: pos > 0n ? 'var(--accent-green)' : pos < 0n ? 'var(--accent-red)' : 'var(--text-secondary)'
+                  }}>
+                    {pos.toString()}
+                  </td>
+                  <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                    {isCash ? '-' : price.toString()}
+                  </td>
+                  <td style={{ 
+                    textAlign: 'right',
+                    color: value > 0n ? 'var(--accent-green)' : value < 0n ? 'var(--accent-red)' : 'var(--text-secondary)'
+                  }}>
+                    {value.toString()}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+        {positions.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', fontSize: '12px' }}>
+            No positions
+          </div>
+        )}
       </div>
     </div>
   );

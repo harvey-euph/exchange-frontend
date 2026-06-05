@@ -5,7 +5,6 @@ import { OrderBook } from './components/OrderBook';
 import { OrderEntry } from './components/OrderEntry';
 import { OpenOrders } from './components/OpenOrders';
 import { Positions } from './components/Positions';
-import { LogViewer } from './components/LogViewer';
 import './App.css';
 
 function App() {
@@ -15,35 +14,26 @@ function App() {
   const [quantity, setQuantity] = useState('100');
   const [modQty, setModQty] = useState<Record<string, string>>({});
   
-  const [showMgmtLogs, setShowMgmtLogs] = useState(false);
-  const [showL2Logs, setShowL2Logs] = useState(false);
-
-  const mgmtLogRef = useRef<HTMLDivElement>(null);
-  const l2LogRef = useRef<HTMLDivElement>(null);
-
   const {
     connected,
     bids,
     asks,
+    prices,
     openOrders,
     positions,
-    mgmtMessages,
-    l2Messages,
     connectMgmt,
     connectL2,
-    disconnectAll,
+    subscribeL2,
     sendOrder,
     cancelOrder,
     modifyOrder
-  } = useExchange();
+  } = useExchange(parseInt(symbolId));
 
   useEffect(() => {
-    if (mgmtLogRef.current && showMgmtLogs) mgmtLogRef.current.scrollTop = mgmtLogRef.current.scrollHeight;
-  }, [mgmtMessages, showMgmtLogs]);
-
-  useEffect(() => {
-    if (l2LogRef.current && showL2Logs) l2LogRef.current.scrollTop = l2LogRef.current.scrollHeight;
-  }, [l2Messages, showL2Logs]);
+    if (symbolId !== '0') {
+      subscribeL2(parseInt(symbolId));
+    }
+  }, [symbolId, subscribeL2, connected.l2]);
 
   const sortedAsks = useMemo(() => 
     Array.from(asks.entries())
@@ -57,43 +47,82 @@ function App() {
       .sort((a, b) => (a.price > b.price ? -1 : 1)), 
   [bids]);
 
-  const handleSendOrder = (side: Side) => sendOrder(side, clientId, symbolId, price, quantity);
+  const handleSendOrder = (side: Side) => {
+    if (!connected.mgmtReady) {
+      alert("please login first");
+      return;
+    }
+    sendOrder(side, clientId, symbolId, price, quantity);
+  };
+  
   const handleCancelOrder = (order: any) => cancelOrder(order, clientId);
   const handleModifyOrder = (order: any) => modifyOrder(order, clientId, modQty[order.orderId] || order.q.toString());
 
   return (
-    <div className="App" style={{ padding: '20px', fontFamily: 'monospace', backgroundColor: '#1e1e1e', color: '#d4d4d4', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontSize: '11px', textAlign: 'left', position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <div className="App" style={{ padding: '12px', minHeight: '100vh', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+      <header style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '12px',
+        paddingBottom: '8px',
+        borderBottom: '1px solid var(--border-color)'
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <h1 style={{ color: '#569cd6', margin: 0, fontSize: '16px' }}>Harvey Exchange</h1>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <span>Client ID:</span>
-            <input type="text" value={clientId} onChange={(e) => setClientId(e.target.value)} style={{ width: '40px', backgroundColor: '#333', color: '#fff', border: '1px solid #555', padding: '2px 4px', fontSize: '11px' }} />
-            <button onClick={() => connectMgmt(clientId, symbolId)} style={{ backgroundColor: connected.mgmtReady ? "#2d5a27" : (connected.mgmt ? "#a58e27" : "#444"), fontSize: "10px", padding: "2px 6px", cursor: "pointer", border: "1px solid #555", color: "#fff" }}>{connected.mgmt ? (connected.mgmtReady ? "Mgmt Ready" : "Mgmt Syncing...") : "Connect Mgmt"}</button>
-            <button onClick={connectL2} style={{ backgroundColor: connected.l2 ? '#2d5a27' : '#444', fontSize: '10px', padding: '2px 6px', cursor: 'pointer', border: '1px solid #555', color: '#fff' }}>{connected.l2 ? 'Reconnect L2' : 'Connect L2'}</button>
-            <button onClick={disconnectAll} style={{ backgroundColor: '#5a2727', fontSize: '10px', padding: '2px 6px', cursor: 'pointer', border: '1px solid #555', color: '#fff' }}>Disconnect All</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '28px', height: '28px', backgroundColor: 'var(--accent-blue)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '16px' }}>H</div>
+            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '-0.5px' }}>Harvey Exchange</h1>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '2px 12px', backgroundColor: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Client ID</span>
+              <input 
+                type="text" 
+                className="modern-input"
+                value={clientId} 
+                onChange={(e) => setClientId(e.target.value)} 
+                style={{ width: '50px', padding: '2px 6px' }} 
+              />
+            </div>
+            <button 
+              className={`modern-button ${connected.mgmtReady ? 'btn-primary' : (connected.mgmt ? 'btn-secondary' : 'btn-primary')}`}
+              onClick={() => connectMgmt(clientId, symbolId)}
+              style={{ padding: '4px 12px', fontSize: '11px' }}
+            >
+              {connected.mgmt ? (connected.mgmtReady ? "✓ Connected" : "Syncing...") : "Login"}
+            </button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => setShowMgmtLogs(!showMgmtLogs)} style={{ backgroundColor: '#444', color: '#fff', border: '1px solid #555', padding: '4px 10px', cursor: 'pointer', fontSize: '11px' }}>{showMgmtLogs ? 'Hide Mgmt Logs' : 'Mgmt Logs'}</button>
-          <button onClick={() => setShowL2Logs(!showL2Logs)} style={{ backgroundColor: '#444', color: '#fff', border: '1px solid #555', padding: '4px 10px', cursor: 'pointer', fontSize: '11px' }}>{showL2Logs ? 'Hide L2 Logs' : 'L2 Logs'}</button>
-        </div>
-      </div>
 
-      <div style={{ display: 'flex', gap: '20px', flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: connected.l2 ? 'var(--accent-green)' : 'var(--accent-red)' }} />
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>L2 Feed</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: connected.mgmtReady ? 'var(--accent-green)' : 'var(--accent-red)' }} />
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Trading API</span>
+          </div>
+        </div>
+      </header>
+
+      <main style={{ display: 'flex', gap: '12px', flex: 1, minHeight: 0 }}>
         <OrderBook 
           symbolId={symbolId} onSymbolChange={setSymbolId}
           bids={sortedBids} asks={sortedAsks} onPriceClick={setPrice} 
+          onReconnectL2={connectL2}
         />
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <OrderEntry 
             price={price} quantity={quantity}
             setPrice={setPrice} setQuantity={setQuantity}
             onSendOrder={handleSendOrder}
+            disabled={!connected.mgmtReady}
           />
 
-          <div style={{ display: 'flex', gap: '20px', flex: 1, minHeight: 0 }}>
+          <div style={{ display: 'flex', gap: '12px', flex: 1, minHeight: 0 }}>
             <OpenOrders 
               orders={Array.from(openOrders.values())}
               modQty={modQty}
@@ -101,19 +130,10 @@ function App() {
               onModify={handleModifyOrder}
               onCancel={handleCancelOrder}
             />
-            <Positions positions={Array.from(positions.entries())} />
+            <Positions positions={Array.from(positions.entries())} prices={prices} />
           </div>
         </div>
-      </div>
-
-      <LogViewer 
-        title="Management Logs" messages={mgmtMessages} show={showMgmtLogs} 
-        onClose={() => setShowMgmtLogs(false)} color="#b5cea8" logRef={mgmtLogRef} 
-      />
-      <LogViewer 
-        title="L2 Logs" messages={l2Messages} show={showL2Logs} 
-        onClose={() => setShowL2Logs(false)} color="#ce9178" logRef={l2LogRef} 
-      />
+      </main>
     </div>
   );
 }

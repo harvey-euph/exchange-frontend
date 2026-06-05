@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: '0.0.0.0',
     proxy: {
       '/ws-mgmt': {
         target: 'ws://127.0.0.1:9001',
@@ -17,7 +18,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/ws-l2/, '')
       },
       '/api': {
-        target: 'http://127.0.0.1:9000',
+        target: 'http://127.0.0.1:8080',
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     }

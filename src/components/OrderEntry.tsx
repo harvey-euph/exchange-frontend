@@ -1,5 +1,6 @@
 import React from 'react';
 import { Side } from '../fbs/exchange/side';
+import { NumericInput } from './NumericInput';
 
 interface OrderEntryProps {
   price: string;
@@ -14,19 +15,43 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
   price, quantity, setPrice, setQuantity, onSendOrder, disabled
 }) => {
   return (
-    <div style={{ border: '1px solid #333', borderRadius: '4px', backgroundColor: '#000', padding: '10px' }}>
-      <h2 style={{ fontSize: '12px', margin: '0 0 10px 0', borderBottom: '1px solid #333', paddingBottom: '5px' }}>Order Entry</h2>
-      <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
-        <div>
-          <div style={{ marginBottom: '4px' }}>Price</div>
-          <input type="text" value={price} onChange={e => setPrice(e.target.value)} style={{ width: '60px', backgroundColor: '#333', color: '#fff', border: '1px solid #555', padding: '4px' }} />
+    <div className="modern-card" style={{ padding: '12px' }}>
+      <h2 style={{ fontSize: '13px', margin: '0 0 12px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', color: 'var(--text-primary)' }}>Order Entry</h2>
+      <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-end' }}>
+        <div style={{ flex: 1, minWidth: '120px' }}>
+          <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>Price</div>
+          <NumericInput 
+            value={price} 
+            onChange={setPrice} 
+            style={{ width: '100%', height: '36px', boxSizing: 'border-box' }} 
+          />
         </div>
-        <div>
-          <div style={{ marginBottom: '4px' }}>Quantity</div>
-          <input type="text" value={quantity} onChange={e => setQuantity(e.target.value)} style={{ width: '60px', backgroundColor: '#333', color: '#fff', border: '1px solid #555', padding: '4px' }} />
+        <div style={{ flex: 1, minWidth: '120px' }}>
+          <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>Quantity</div>
+          <NumericInput 
+            value={quantity} 
+            onChange={setQuantity} 
+            style={{ width: '100%', height: '36px', boxSizing: 'border-box' }} 
+          />
         </div>
-        <button onClick={() => onSendOrder(Side.Buy)} disabled={disabled} style={{ backgroundColor: disabled ? "#444" : "#2d5a27", color: "#fff", border: "none", padding: "6px 15px", cursor: disabled ? "not-allowed" : "pointer", borderRadius: "2px" }}>Buy</button>
-        <button onClick={() => onSendOrder(Side.Sell)} disabled={disabled} style={{ backgroundColor: disabled ? "#444" : "#5a2727", color: "#fff", border: "none", padding: "6px 15px", cursor: disabled ? "not-allowed" : "pointer", borderRadius: "2px" }}>Sell</button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button 
+            className="modern-button btn-buy" 
+            onClick={() => onSendOrder(Side.Buy)} 
+            disabled={disabled}
+            style={{ padding: '0 32px', height: '36px', fontSize: '13px' }}
+          >
+            BUY
+          </button>
+          <button 
+            className="modern-button btn-sell" 
+            onClick={() => onSendOrder(Side.Sell)} 
+            disabled={disabled}
+            style={{ padding: '0 32px', height: '36px', fontSize: '13px' }}
+          >
+            SELL
+          </button>
+        </div>
       </div>
     </div>
   );

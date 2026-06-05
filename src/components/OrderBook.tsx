@@ -6,65 +6,101 @@ interface OrderBookProps {
   bids: { price: bigint; quantity: bigint }[];
   asks: { price: bigint; quantity: bigint }[];
   onPriceClick?: (price: string) => void;
+  onReconnectL2?: () => void;
 }
 
-export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, bids, asks, onPriceClick }) => {
+export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, bids, asks, onPriceClick, onReconnectL2 }) => {
+  // Take 5 best asks (lowest prices). Since asks is [High ... Low], we take the last 5.
+  const displayAsks = asks.slice(-5);
+  const paddedAsks = [...Array(Math.max(0, 5 - displayAsks.length)).fill(null), ...displayAsks];
+
+  // Take 5 best bids (highest prices). Since bids is [High ... Low], we take the first 5.
+  const displayBids = bids.slice(0, 5);
+  const paddedBids = [...displayBids, ...Array(Math.max(0, 5 - displayBids.length)).fill(null)];
+
+  const isCash = symbolId === '0';
+
   return (
-    <div style={{ width: '220px', display: 'flex', flexDirection: 'column', border: '1px solid #333', borderRadius: '4px', backgroundColor: '#000', padding: '10px' }}>
-      <style>{`
-        .ob-row:hover {
-          background-color: #222;
-        }
-      `}</style>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid #333', paddingBottom: '5px' }}>
-        <h2 style={{ fontSize: '12px', margin: 0 }}>L2 Orderbook</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ fontSize: '10px', color: '#888' }}>Sym:</span>
+    <div className="modern-card" style={{ width: '240px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+        <h2 style={{ fontSize: '13px', margin: 0, color: 'var(--text-primary)' }}>
+          {isCash ? 'CASH' : `Order Book: ${symbolId}`}
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button className="reconnect-btn-modern" onClick={onReconnectL2} title="Reconnect L2">↻</button>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Sym:</span>
           <input 
             type="text" 
+            className="modern-input"
             value={symbolId} 
             onChange={e => onSymbolChange(e.target.value)} 
-            style={{ width: '30px', backgroundColor: '#333', color: '#fff', border: '1px solid #555', padding: '1px 4px', fontSize: '11px' }} 
+            style={{ width: '35px', padding: '2px 4px' }} 
           />
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ color: '#888', textAlign: 'right' }}>
-              <th style={{ textAlign: 'left' }}>Side</th>
-              <th>Price</th>
-              <th>Size</th>
-            </tr>
-          </thead>
-          <tbody>
-            {asks.map((level, i) => (
-              <tr 
-                key={`ask-${i}`} 
-                className="ob-row"
-                style={{ color: '#f44747', textAlign: 'right', cursor: 'pointer' }}
-                onClick={() => onPriceClick?.(level.price.toString())}
-              >
-                <td style={{ textAlign: 'left' }}>ASK</td>
-                <td>{level.price.toString()}</td>
-                <td>{level.quantity.toString()}</td>
+      
+      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scroll">
+        {isCash ? (
+          <div style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '20px', fontSize: '12px' }}>
+            Cash has no orderbook.
+          </div>
+        ) : (
+          <table className="modern-table">
+            <thead>
+              <tr>
+                <th style={{ width: '40px' }}>Side</th>
+                <th style={{ textAlign: 'right' }}>Price</th>
+                <th style={{ textAlign: 'right' }}>Size</th>
               </tr>
-            ))}
-            <tr style={{ height: '10px' }}><td colSpan={3}></td></tr>
-            {bids.map((level, i) => (
-              <tr 
-                key={`bid-${i}`} 
-                className="ob-row"
-                style={{ color: '#4ec9b0', textAlign: 'right', cursor: 'pointer' }}
-                onClick={() => onPriceClick?.(level.price.toString())}
-              >
-                <td style={{ textAlign: 'left' }}>BID</td>
-                <td>{level.price.toString()}</td>
-                <td>{level.quantity.toString()}</td>
+            </thead>
+            <tbody>
+              {paddedAsks.map((level, i) => (
+                <tr 
+                  key={`ask-${i}`} 
+                  style={{ cursor: level ? 'pointer' : 'default', height: '22px' }}
+                  onClick={() => level && onPriceClick?.(level.price.toString())}
+                >
+                  <td style={{ color: level ? 'var(--accent-red)' : 'transparent', fontWeight: 600 }}>ASK</td>
+                  <td style={{ textAlign: 'right', color: level ? 'var(--text-primary)' : 'var(--border-color)' }}>
+                    {level ? level.price.toString() : '-'}
+                  </td>
+                  <td style={{ textAlign: 'right', color: level ? 'var(--text-secondary)' : 'var(--border-color)' }}>
+                    {level ? level.quantity.toString() : '-'}
+                  </td>
+                </tr>
+              ))}
+              
+              <tr style={{ height: '28px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+                <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-primary)', fontSize: '11px', verticalAlign: 'middle', fontWeight: 600 }}>
+                  {(() => {
+                    const bestBid = bids[0]?.price;
+                    const bestAsk = asks[asks.length - 1]?.price;
+                    if (bestBid !== undefined && bestAsk !== undefined) {
+                      return `MID: ${((bestBid + bestAsk) / 2n).toString()}`;
+                    }
+                    return 'MID: -';
+                  })()}
+                </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
+
+              {paddedBids.map((level, i) => (
+                <tr 
+                  key={`bid-${i}`} 
+                  style={{ cursor: level ? 'pointer' : 'default', height: '22px' }}
+                  onClick={() => level && onPriceClick?.(level.price.toString())}
+                >
+                  <td style={{ color: level ? 'var(--accent-green)' : 'transparent', fontWeight: 600 }}>BID</td>
+                  <td style={{ textAlign: 'right', color: level ? 'var(--text-primary)' : 'var(--border-color)' }}>
+                    {level ? level.price.toString() : '-'}
+                  </td>
+                  <td style={{ textAlign: 'right', color: level ? 'var(--text-secondary)' : 'var(--border-color)' }}>
+                    {level ? level.quantity.toString() : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
