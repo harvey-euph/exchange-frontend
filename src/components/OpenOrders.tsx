@@ -81,21 +81,22 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
     <div className="modern-card open-orders-section">
       <h2 style={{ fontSize: '13px', margin: '0 0 16px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', color: 'var(--text-primary)' }}>Open Orders</h2>
       <div className="table-container custom-scroll">
-        <table className="modern-table">
+        <table className="modern-table" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              <th style={{ width: '80px' }}>ID</th>
-              <th style={{ width: '60px' }}>Side</th>
-              <th style={{ textAlign: 'right' }}>Price</th>
-              <th style={{ textAlign: 'right' }}>Qty</th>
-              <th style={{ textAlign: 'right', width: '80px' }}>Filled</th>
-              <th style={{ textAlign: 'right', width: '80px' }}>Actions</th>
+              <th style={{ width: '50px', textAlign: 'right' }}>ID</th>
+              <th style={{ width: '42px', textAlign: 'right' }}>Side</th>
+              <th style={{ textAlign: 'right', width: '80px' }}>Price</th>
+              <th style={{ textAlign: 'right', width: '70px' }}>Qty</th>
+              <th style={{ textAlign: 'right', width: '45px' }}>Fill</th>
+              <th style={{ textAlign: 'right', width: '55px' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {orders.map((o, index) => {
               const vals = editValues[o.orderId] || { p: o.p.toString(), q: o.q.toString() };
               const isModified = vals.p !== o.p.toString() || vals.q !== o.q.toString();
+              const displayId = `**${o.orderId.slice(-6)}`;
               
               return (
                 <tr 
@@ -105,10 +106,12 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                     backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'
                   }}
                 >
-                  <td style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>{o.orderId}</td>
+                  <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={o.orderId}>{displayId}</td>
                   <td style={{ 
+                    textAlign: 'right',
                     color: o.side === Side.Buy ? 'var(--accent-green)' : o.side === Side.Sell ? 'var(--accent-red)' : 'var(--text-secondary)',
-                    fontWeight: 600
+                    fontWeight: 600,
+                    fontSize: '10px'
                   }}>
                     {Side[o.side]}
                   </td>
@@ -119,12 +122,13 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                       onKeyDown={(e) => handleKeyDown(e, o)}
                       onBlur={() => handleRevert(o.orderId, o)}
                       style={{ 
-                        width: '80px', 
-                        height: '24px', 
+                        width: '100%', 
+                        height: '22px', 
                         textAlign: 'right', 
-                        fontSize: '12px',
+                        fontSize: '11px',
                         border: isModified ? '1px solid var(--accent-blue)' : '1px solid transparent',
-                        backgroundColor: isModified ? 'var(--bg-input)' : 'transparent'
+                        backgroundColor: isModified ? 'var(--bg-input)' : 'transparent',
+                        padding: '0 4px'
                       }} 
                     />
                   </td>
@@ -135,21 +139,22 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                       onKeyDown={(e) => handleKeyDown(e, o)}
                       onBlur={() => handleRevert(o.orderId, o)}
                       style={{ 
-                        width: '80px', 
-                        height: '24px', 
+                        width: '100%', 
+                        height: '22px', 
                         textAlign: 'right', 
-                        fontSize: '12px',
+                        fontSize: '11px',
                         border: isModified ? '1px solid var(--accent-blue)' : '1px solid transparent',
-                        backgroundColor: isModified ? 'var(--bg-input)' : 'transparent'
+                        backgroundColor: isModified ? 'var(--bg-input)' : 'transparent',
+                        padding: '0 4px'
                       }} 
                     />
                   </td>
-                  <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>{o.filled.toString()}</td>
+                  <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: '11px' }}>{o.filled.toString()}</td>
                   <td style={{ textAlign: 'right' }}>
                     <button 
                       className="modern-button btn-sell" 
                       onClick={() => onCancel(o)}
-                      style={{ padding: '2px 10px', fontSize: '11px', height: '24px' }}
+                      style={{ padding: '2px 4px', fontSize: '10px', height: '22px', minWidth: '45px' }}
                     >
                       Cancel
                     </button>

@@ -215,7 +215,7 @@ body {
   .notification-item {
     width: 100vw; /* 手機 1 width */
     height: 12.5vh; /* 大約 1/8 height */
-    border-radius: 0; /* 手機版通常填滿頂部 */
+    border-radius: 0 0 12px 12px; /* 底部稍微圓角，更美觀 */
     max-width: none;
   }
 }

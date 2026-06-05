@@ -31,13 +31,13 @@ export const Positions: React.FC<PositionsProps> = ({ positions, prices }) => {
         </div>
       </div>
       <div className="table-container custom-scroll">
-        <table className="modern-table">
+        <table className="modern-table" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              <th>Sym</th>
-              <th style={{ textAlign: 'right' }}>Pos</th>
-              <th style={{ textAlign: 'right' }}>Price</th>
-              <th style={{ textAlign: 'right' }}>Value</th>
+              <th style={{ width: '45px', textAlign: 'right' }}>Sym</th>
+              <th style={{ textAlign: 'right', width: '80px' }}>Pos</th>
+              <th style={{ textAlign: 'right', width: '80px' }}>Price</th>
+              <th style={{ textAlign: 'right', width: '95px' }}>Value</th>
             </tr>
           </thead>
           <tbody>
@@ -47,21 +47,23 @@ export const Positions: React.FC<PositionsProps> = ({ positions, prices }) => {
               const value = isCash ? pos : pos * price;
               return (
                 <tr key={sId} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ color: isCash ? 'var(--accent-blue)' : 'var(--text-primary)', fontWeight: isCash ? 600 : 400 }}>
+                  <td style={{ textAlign: 'right', color: isCash ? 'var(--accent-blue)' : 'var(--text-primary)', fontWeight: isCash ? 600 : 400, fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {isCash ? 'CASH' : sId}
                   </td>
                   <td style={{ 
                     textAlign: 'right',
-                    color: pos > 0n ? 'var(--accent-green)' : pos < 0n ? 'var(--accent-red)' : 'var(--text-secondary)'
+                    color: pos > 0n ? 'var(--accent-green)' : pos < 0n ? 'var(--accent-red)' : 'var(--text-secondary)',
+                    fontSize: '11px'
                   }}>
                     {pos.toString()}
                   </td>
-                  <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
-                    {isCash ? '-' : price.toString()}
+                  <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: '11px' }}>
+                    {isCash ? '1' : price.toString()}
                   </td>
                   <td style={{ 
                     textAlign: 'right',
-                    color: value > 0n ? 'var(--accent-green)' : value < 0n ? 'var(--accent-red)' : 'var(--text-secondary)'
+                    color: value > 0n ? 'var(--accent-green)' : value < 0n ? 'var(--accent-red)' : 'var(--text-secondary)',
+                    fontSize: '11px'
                   }}>
                     {value.toString()}
                   </td>

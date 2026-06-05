@@ -45,6 +45,8 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
   const l2WsRef = useRef<WebSocket | null>(null);
   const l2RetryTimeoutRef = useRef<number | null>(null);
   const lastClientIdRef = useRef<string | null>(null);
+  const notifiedExecIds = useRef<Set<string>>(new Set());
+  const mgmtReadyNotifiedRef = useRef(false);
 
   useEffect(() => {
     setBids(new Map());
@@ -79,29 +81,42 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     if (execType === ExecType.Complete) {
       setConnected(prev => ({ ...prev, mgmtReady: true }));
       addMgmtLog('[System] Management session ready');
-      onNotification?.('info', 'System', 'Management session ready');
+      if (!mgmtReadyNotifiedRef.current) {
+        onNotification?.('info', 'System', 'Management session ready');
+        mgmtReadyNotifiedRef.current = true;
+      }
       return;
     }
     
     const execName = ExecType[execType] ?? `Unknown(${execType})`;
     addMgmtLog(`[Exec] ID=${orderId} Type=${execName} Side=${Side[side]} P=${p} Q=${q} ExecID=${execId}`);
 
+    // Deduplicate notifications by execId
+    const shouldNotify = execId !== '0' && !notifiedExecIds.current.has(execId);
+    if (execId !== '0') {
+      notifiedExecIds.current.add(execId);
+    }
+
     if (rejectCode !== 0) {
       addMgmtLog(`[Error] Order Rejected: ID=${orderId} Code=${rejectCode}`);
-      onNotification?.('rejected', 'Order Rejected', `ID: ${orderId} Code: ${rejectCode}`);
+      if (shouldNotify) {
+        onNotification?.('rejected', 'Order Rejected', `ID: ${orderId} Code: ${rejectCode}`);
+      }
       return;
     }
 
-    if (execType === ExecType.New) {
-      onNotification?.('acked', 'Order Accepted', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
-    } else if (execType === ExecType.Cancelled) {
-      onNotification?.('info', 'Order Cancelled', `ID: ${orderId} has been removed`);
-    } else if (execType === ExecType.Replaced) {
-      onNotification?.('acked', 'Order Modified', `ID: ${orderId} updated to Qty: ${q}`);
-    } else if (execType === ExecType.Fill) {
-      onNotification?.('acked', 'Order Filled', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
-    } else if (execType === ExecType.PartialFill) {
-      onNotification?.('info', 'Partial Fill', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
+    if (shouldNotify) {
+      if (execType === ExecType.New) {
+        onNotification?.('acked', 'Order Accepted', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
+      } else if (execType === ExecType.Cancelled) {
+        onNotification?.('info', 'Order Cancelled', `ID: ${orderId} has been removed`);
+      } else if (execType === ExecType.Replaced) {
+        onNotification?.('acked', 'Order Modified', `ID: ${orderId} updated to Qty: ${q}`);
+      } else if (execType === ExecType.Fill) {
+        onNotification?.('acked', 'Order Filled', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
+      } else if (execType === ExecType.PartialFill) {
+        onNotification?.('info', 'Partial Fill', `${Side[side]} ${q} @ ${p} (ID: ${orderId})`);
+      }
     }
 
     if (orderId !== '0') {
@@ -182,6 +197,8 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     ws.onopen = () => {
       setOpenOrders(new Map());
       setPositions(new Map());
+      notifiedExecIds.current.clear();
+      mgmtReadyNotifiedRef.current = false;
       addMgmtLog(`Connected ClientID=${clientId}`);
       setConnected(prev => ({ ...prev, mgmt: true }));
       ws.send(`sub ${numericClientId}`);
