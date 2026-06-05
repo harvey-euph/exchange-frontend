@@ -14,6 +14,17 @@
   --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* 防止全域橫向捲動 */
+  background-color: var(--bg-main);
+}
+
 .App {
   background-color: var(--bg-main) !important;
   color: var(--text-primary) !important;
@@ -76,7 +87,7 @@
 
 .modern-table th {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: clamp(10px, 2.5vw, 11px); /* 比例縮放 */
   font-weight: 500;
   text-align: left;
   padding-bottom: 8px;
@@ -87,7 +98,7 @@
 .modern-table td {
   padding: 4px 0;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: clamp(11px, 3vw, 12px); /* 比例縮放 */
 }
 
 .reconnect-btn-modern {
@@ -126,25 +137,24 @@
 /* Notification System */
 .notification-container {
   position: fixed;
-  top: 12px;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
   pointer-events: none;
   width: 100%;
 }
 
 .notification-item {
-  width: 50%;
-  max-width: 600px;
-  min-height: 60px;
+  width: 50vw; /* 電腦螢幕大約 1/2 width */
+  height: 12.5vh; /* 大約 1/8 height */
+  max-width: 800px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: 0 0 16px 16px; /* 頂部貼齊，底部圓角 */
   padding: 12px 20px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   display: flex;
@@ -154,6 +164,7 @@
   animation: slideInDown 0.3s ease-out forwards, fadeOut 0.3s ease-in 1.2s forwards;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  margin-bottom: 8px;
 }
 
 @keyframes slideInDown {
@@ -200,6 +211,16 @@
 .notif-title-rejected { color: var(--accent-red); }
 .notif-title-info { color: var(--accent-blue); }
 
+/* Mobile Notification Overrides */
+@media (max-width: 992px) {
+  .notification-item {
+    width: 100vw; /* 手機 1 width */
+    height: 12.5vh; /* 大約 1/8 height */
+    border-radius: 0; /* 手機版通常填滿頂部 */
+    max-width: none;
+  }
+}
+
 /* Layout Classes */
 .app-container {
   padding: 12px;
@@ -207,7 +228,6 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  background-color: var(--bg-main);
 }
 
 .header-container {
@@ -222,7 +242,7 @@
 .header-left {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: clamp(10px, 4vw, 20px);
 }
 
 .header-right {
@@ -256,7 +276,7 @@
 @media (max-width: 992px) {
   .main-content {
     flex-direction: column;
-    overflow-y: auto;
+    overflow-y: visible; /* 讓主容器隨內容展開 */
   }
 
   .header-container {
@@ -288,6 +308,10 @@
     align-items: flex-start;
     gap: 12px;
   }
+
+  .modern-card {
+    padding: 12px; /* 小螢幕稍微縮小內距 */
+  }
 }
 
 /* Component Specific Responsive Overrides */
@@ -305,8 +329,8 @@
 
 @media (max-width: 992px) {
   .order-book-container {
-    width: 100%;
-    max-height: 350px;
+    width: 100%; /* 手機寬度 100% */
+    max-height: none; /* 移除高度限制，無內部捲軸 */
   }
 }
 
@@ -349,6 +373,6 @@
   .open-orders-section, .positions-section {
     flex: none;
     width: 100%;
-    min-height: 300px;
+    min-height: auto; /* 隨內容撐開 */
   }
 }

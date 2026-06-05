@@ -57,7 +57,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
         </div>
       </div>
       
-      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scroll">
+      <div className="custom-scroll">
         {isCash ? (
           <div style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '20px', fontSize: '12px' }}>
             Cash has no orderbook.
