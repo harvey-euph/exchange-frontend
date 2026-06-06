@@ -74,7 +74,7 @@ export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, c
         <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: 600 }}>{cash.toString()}</span>
       </div>
 
-      <div className="table-container custom-scroll">
+      <div className="table-container custom-scroll" style={{ paddingTop: '12px' }}>
         <table className="modern-table" style={{ tableLayout: 'fixed' }}>
           <thead>
             <tr>
