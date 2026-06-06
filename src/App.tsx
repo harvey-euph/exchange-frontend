@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { Side } from './fbs/exchange/side';
+import { OrderType } from './fbs/exchange/order-type';
 import { useExchange } from './hooks/useExchange';
 import { OrderBook } from './components/OrderBook';
 import { OrderEntry } from './components/OrderEntry';
@@ -14,6 +15,7 @@ function App() {
   const [symbolId, setSymbolId] = useState('1');
   const [price, setPrice] = useState('5000');
   const [quantity, setQuantity] = useState('100');
+  const [hasLoggedIn, setHasLoggedIn] = useState(false);
   
   const notifRef = useRef<NotificationSystemRef>(null);
 
@@ -43,6 +45,13 @@ function App() {
     }
   }, [symbolId, subscribeL2, connected.l2]);
 
+  // Track initial successful connection to disable inputs
+  useEffect(() => {
+    if (connected.mgmtReady) {
+      setHasLoggedIn(true);
+    }
+  }, [connected.mgmtReady]);
+
   const sortedAsks = useMemo(() => 
     Array.from(asks.entries())
       .map(([p, q]) => ({ price: p, quantity: q }))
@@ -66,6 +75,16 @@ function App() {
   const handleCancelOrder = (order: any) => cancelOrder(order, clientId);
   const handleModifyOrder = (order: any, newPrice: string, newQty: string) => modifyOrder(order, clientId, newPrice, newQty);
 
+  const handleFlatten = useCallback((sId: number, side: Side, quantity: bigint) => {
+    if (!connected.mgmtReady) {
+      handleNotification('rejected', 'Error', 'Please login first');
+      return;
+    }
+    const oppositeSide = side === Side.Buy ? Side.Sell : Side.Buy;
+    const markPrice = prices.get(sId) || 0n;
+    sendOrder(oppositeSide, clientId, sId.toString(), markPrice.toString(), quantity.toString(), OrderType.Market);
+  }, [connected.mgmtReady, clientId, prices, sendOrder, handleNotification]);
+
   return (
     <div className="app-container">
       <NotificationSystem ref={notifRef} />
@@ -85,12 +104,14 @@ function App() {
                 className="modern-input"
                 value={clientId} 
                 onChange={(e) => setClientId(e.target.value)} 
-                style={{ width: '50px', padding: '2px 6px' }} 
+                disabled={hasLoggedIn}
+                style={{ width: '50px', padding: '2px 6px', opacity: hasLoggedIn ? 0.6 : 1 }} 
               />
             </div>
             <button 
               className={`modern-button ${connected.mgmtReady ? 'btn-primary' : (connected.mgmt ? 'btn-secondary' : 'btn-primary')}`}
               onClick={() => connectMgmt(clientId, symbolId)}
+              disabled={hasLoggedIn}
               style={{ padding: '4px 12px', fontSize: '11px' }}
             >
               {connected.mgmt ? (connected.mgmtReady ? "✓ Connected" : "Syncing...") : "Login"}
@@ -101,11 +122,11 @@ function App() {
         <div className="header-right">
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: connected.l2 ? 'var(--accent-green)' : 'var(--accent-red)' }} />
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>L2 Feed</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Market Data</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: connected.mgmtReady ? 'var(--accent-green)' : 'var(--accent-red)' }} />
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Trading API</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Client Server</span>
           </div>
         </div>
       </header>
@@ -139,6 +160,7 @@ function App() {
                 cash={cash} 
                 prices={prices} 
                 currentSymbolId={symbolId}
+                onFlatten={handleFlatten}
               />
             </div>
           </div>

@@ -140,8 +140,8 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
             <thead>
               <tr>
                 <th style={{ width: '50px', textAlign: 'right' }}>ID</th>
-                <th style={{ width: '42px', textAlign: 'right' }}>Side</th>
-                <th style={{ textAlign: 'right', width: '80px' }}>Price</th>
+                <th style={{ width: '42px', textAlign: 'right', padding: '2px 4px', fontSize: '11px', verticalAlign: 'middle' }}>Side</th>
+                <th style={{ textAlign: 'right', width: '80px', padding: '2px 4px', fontSize: '11px', verticalAlign: 'middle' }}>Price</th>
                 <th style={{ textAlign: 'right', width: '70px' }}>Qty</th>
                 <th style={{ textAlign: 'right', width: '45px' }}>Fill</th>
                 <th style={{ textAlign: 'right', width: '55px' }}>Action</th>
@@ -188,7 +188,7 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                             onKeyDown={(e) => handleKeyDown(e, o)}
                             onBlur={() => handleRevert(o.orderId, o)}
                             style={{ 
-                              width: '100%', 
+                              width: '70%', 
                               height: '22px', 
                               textAlign: 'right', 
                               fontSize: '11px',
@@ -205,7 +205,7 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                             onKeyDown={(e) => handleKeyDown(e, o)}
                             onBlur={() => handleRevert(o.orderId, o)}
                             style={{ 
-                              width: '100%', 
+                              width: '70%', 
                               height: '22px', 
                               textAlign: 'right', 
                               fontSize: '11px',

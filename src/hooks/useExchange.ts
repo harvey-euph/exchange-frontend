@@ -48,6 +48,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
   const lastClientIdRef = useRef<string | null>(null);
   const notifiedExecIds = useRef<Set<string>>(new Set());
   const mgmtReadyNotifiedRef = useRef(false);
+  const isInitialLoginRef = useRef(true);
 
   useEffect(() => {
     setBids(new Map());
@@ -83,7 +84,10 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
       setConnected(prev => ({ ...prev, mgmtReady: true }));
       addMgmtLog('[System] Management session ready');
       if (!mgmtReadyNotifiedRef.current) {
-        onNotification?.('info', 'System', 'Management session ready');
+        if (isInitialLoginRef.current) {
+          onNotification?.('info', 'System', 'Log in success');
+          isInitialLoginRef.current = false;
+        }
         mgmtReadyNotifiedRef.current = true;
       }
       return;
@@ -261,8 +265,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
 
     ws.onopen = () => {
       setOpenOrders(new Map());
-      setPositions(new Map());
-      setCash(0n);
+      // On re-open, we keep positions to avoid flickering but we will sync net qty
       notifiedExecIds.current.clear();
       mgmtReadyNotifiedRef.current = false;
       addMgmtLog(`Connected ClientID=${clientId}`);
@@ -303,10 +306,12 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
                     realizedPnL: 0n,
                   };
                 } else {
+                  // Re-sync logic: server provides net position. 
+                  // If we're reconnecting, we maintain the net total but consolidate into a single 'sync' lot 
+                  // because we can't reliably reconcile multiple lots from a net position sync.
                   if (current.totalQuantity !== absQty || current.side !== side) {
                     current.totalQuantity = absQty;
                     current.side = side;
-                    // Reset lots as they are out of sync
                     current.lots = qty !== 0n ? [{ price: current.averagePrice, quantity: absQty, timestamp: Date.now(), orderId: 'sync' }] : [];
                   }
                 }
@@ -425,7 +430,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     }
   }, []);
 
-  const sendOrder = useCallback(async (side: Side, clientId: string, symbolId: string, price: string, quantity: string) => {
+  const sendOrder = useCallback(async (side: Side, clientId: string, symbolId: string, price: string, quantity: string, type: OrderType = OrderType.Limit) => {
     if (!mgmtWsRef.current || mgmtWsRef.current.readyState !== WebSocket.OPEN) {
       addMgmtLog(`Error: Management WS not connected`); return;
     }
@@ -441,7 +446,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     OrderRequest.addClientId(builder, numericClientId);
     OrderRequest.addSymbolId(builder, parseInt(symbolId));
     OrderRequest.addSide(builder, side);
-    OrderRequest.addType(builder, OrderType.Limit);
+    OrderRequest.addType(builder, type);
     OrderRequest.addP(builder, BigInt(price));
     OrderRequest.addQ(builder, qVal);
     OrderRequest.addVisibleQty(builder, qVal);
@@ -452,7 +457,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     ClientRequest.addData(builder, off);
     builder.finish(ClientRequest.endClientRequest(builder));
     try {
-      addMgmtLog(`Sending ${Side[side]} order: ClientID=${clientId}(${numericClientId}) P=${price} Q=${quantity} ID=${orderId} ExecID=${execId}`);
+      addMgmtLog(`Sending ${Side[side]} ${OrderType[type]} order: ClientID=${clientId}(${numericClientId}) P=${price} Q=${quantity} ID=${orderId} ExecID=${execId}`);
       mgmtWsRef.current.send(builder.asUint8Array() as any);
     } catch (err) { addMgmtLog(`Order send error: ${err}`); }
   }, [addMgmtLog]);

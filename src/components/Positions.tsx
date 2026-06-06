@@ -7,9 +7,10 @@ interface PositionsProps {
   cash: bigint;
   prices: Map<number, bigint>;
   currentSymbolId?: string;
+  onFlatten?: (symbolId: number, side: Side, quantity: bigint) => void;
 }
 
-export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, currentSymbolId }) => {
+export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, currentSymbolId, onFlatten }) => {
   const [expandedSymbols, setExpandedSymbols] = useState<Set<number>>(new Set());
 
   const activePositions = useMemo(() => 
@@ -143,8 +144,19 @@ export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, c
                       <div style={{ color: unrealizedPnL >= 0n ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                         {unrealizedPnL >= 0n ? '+' : ''}{unrealizedPnL.toString()}
                       </div>
-                      <div style={{ color: pos.realizedPnL >= 0n ? 'var(--text-secondary)' : 'var(--accent-red)', opacity: 0.8 }}>
-                        {pos.realizedPnL >= 0n ? '+' : ''}{pos.realizedPnL.toString()}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ color: pos.realizedPnL >= 0n ? 'var(--text-secondary)' : 'var(--accent-red)', opacity: 0.8 }}>
+                          {pos.realizedPnL >= 0n ? '+' : ''}{pos.realizedPnL.toString()}
+                        </div>
+                        {pos.totalQuantity !== 0n && onFlatten && (
+                          <button 
+                            className="modern-button btn-secondary" 
+                            onClick={(e) => { e.stopPropagation(); onFlatten(sId, pos.side, pos.totalQuantity); }}
+                            style={{ padding: '0px 4px', fontSize: '8px', height: '14px', lineHeight: '12px', minWidth: 'auto', background: 'rgba(255,255,255,0.05)' }}
+                          >
+                            FLAT
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -162,7 +174,18 @@ export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, c
                           {avgPrice.toString()}
                         </td>
                         <td style={{ textAlign: 'right', fontSize: '9px', color: 'var(--text-secondary)' }}>
-                          {new Date(gl.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
+                            <span>{new Date(gl.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                            {onFlatten && (
+                              <button 
+                                className="modern-button btn-secondary" 
+                                onClick={(e) => { e.stopPropagation(); onFlatten(sId, pos.side, gl.quantity); }}
+                                style={{ padding: '0px 3px', fontSize: '7px', height: '12px', lineHeight: '10px', minWidth: 'auto', background: 'rgba(255,255,255,0.05)' }}
+                              >
+                                X
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
