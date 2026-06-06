@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Side } from '../fbs/exchange/side';
 import type { OrderData } from '../types';
 import { NumericInput } from './NumericInput';
@@ -7,13 +7,58 @@ interface OpenOrdersProps {
   orders: OrderData[];
   onModify: (order: OrderData, newPrice: string, newQty: string) => void;
   onCancel: (order: OrderData) => void;
+  currentSymbolId?: string;
 }
 
 export const OpenOrders: React.FC<OpenOrdersProps> = ({
-  orders, onModify, onCancel
+  orders, onModify, onCancel, currentSymbolId
 }) => {
   const [editValues, setEditValues] = useState<Record<string, { p: string, q: string }>>({});
+  const [expandedSymbols, setExpandedSymbols] = useState<Set<number>>(new Set());
   const lastOrdersRef = React.useRef<Map<string, { p: string, q: string }>>(new Map());
+
+  // Group orders by symbolId
+  const ordersBySymbol = useMemo(() => {
+    const groups: Record<number, OrderData[]> = {};
+    orders.forEach(o => {
+      if (!groups[o.symbolId]) groups[o.symbolId] = [];
+      groups[o.symbolId].push(o);
+    });
+    return groups;
+  }, [orders]);
+
+  const sortedSymbols = useMemo(() => {
+    return Object.keys(ordersBySymbol).map(Number).sort((a, b) => a - b);
+  }, [ordersBySymbol]);
+
+  // Auto-expand ONLY the current symbol and collapse others when currentSymbolId changes
+  useEffect(() => {
+    if (currentSymbolId !== undefined) {
+      const sid = parseInt(currentSymbolId);
+      if (!isNaN(sid)) {
+        setExpandedSymbols(new Set([sid]));
+      }
+    }
+  }, [currentSymbolId]);
+
+  const toggleSymbol = (sid: number) => {
+    setExpandedSymbols(prev => {
+      const next = new Set(prev);
+      if (next.has(sid)) next.delete(sid);
+      else next.add(sid);
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    setExpandedSymbols(new Set(sortedSymbols));
+  };
+
+  const collapseAll = () => {
+    setExpandedSymbols(new Set());
+  };
+
+  const isAllExpanded = sortedSymbols.length > 0 && sortedSymbols.every(s => expandedSymbols.has(s));
 
   // Initialize or update edit values when orders change
   useEffect(() => {
@@ -25,17 +70,12 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
         const qStr = o.q.toString();
         const last = lastOrdersRef.current.get(orderId);
 
-        // Update if:
-        // 1. New order
-        // 2. Order values in props changed (backend update)
-        // 3. Or if we don't have a value for it yet
         if (!next[orderId] || (last && (last.p !== pStr || last.q !== qStr))) {
           next[orderId] = { p: pStr, q: qStr };
         }
         lastOrdersRef.current.set(orderId, { p: pStr, q: qStr });
       });
 
-      // Cleanup removed orders
       const currentIds = new Set(orders.map(o => o.orderId));
       Object.keys(next).forEach(id => {
         if (!currentIds.has(id)) {
@@ -61,7 +101,6 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
       if (vals) {
         onModify(order, vals.p, vals.q);
       }
-      // Revert immediately to current prop values
       handleRevert(order.orderId, order);
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
@@ -81,95 +120,117 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
     <div className="modern-card open-orders-section">
       <div className="block-header">
         <h2 className="block-title">Open Orders</h2>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            className="modern-button btn-secondary" 
+            onClick={isAllExpanded ? collapseAll : expandAll}
+            style={{ padding: '2px 8px', fontSize: '10px', height: '22px' }}
+          >
+            {isAllExpanded ? 'Collapse All' : 'Expand All'}
+          </button>
+        </div>
       </div>
       <div className="table-container custom-scroll">
-        <table className="modern-table" style={{ tableLayout: 'fixed' }}>
-          <thead>
-            <tr>
-              <th style={{ width: '50px', textAlign: 'right' }}>ID</th>
-              <th style={{ width: '42px', textAlign: 'right' }}>Side</th>
-              <th style={{ textAlign: 'right', width: '80px' }}>Price</th>
-              <th style={{ textAlign: 'right', width: '70px' }}>Qty</th>
-              <th style={{ textAlign: 'right', width: '45px' }}>Fill</th>
-              <th style={{ textAlign: 'right', width: '55px' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((o, index) => {
-              const vals = editValues[o.orderId] || { p: o.p.toString(), q: o.q.toString() };
-              const isModified = vals.p !== o.p.toString() || vals.q !== o.q.toString();
-              const displayId = `**${o.orderId.slice(-6)}`;
-              
-              return (
-                <tr 
-                  key={o.orderId} 
-                  style={{ 
-                    borderBottom: '1px solid var(--border-color)',
-                    backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'
-                  }}
-                >
-                  <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={o.orderId}>{displayId}</td>
-                  <td style={{ 
-                    textAlign: 'right',
-                    color: o.side === Side.Buy ? 'var(--accent-green)' : o.side === Side.Sell ? 'var(--accent-red)' : 'var(--text-secondary)',
-                    fontWeight: 600,
-                    fontSize: '10px'
-                  }}>
-                    {Side[o.side]}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <NumericInput 
-                      className="editable-cell-input"
-                      value={vals.p} 
-                      onChange={(v) => handleUpdate(o.orderId, 'p', v)}
-                      onKeyDown={(e) => handleKeyDown(e, o)}
-                      onBlur={() => handleRevert(o.orderId, o)}
-                      style={{ 
-                        width: '100%', 
-                        height: '22px', 
-                        textAlign: 'right', 
-                        fontSize: '11px',
-                        border: isModified ? '1px solid var(--accent-blue)' : '1px solid transparent',
-                        padding: '0 4px'
-                      }} 
-                    />
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <NumericInput 
-                      className="editable-cell-input"
-                      value={vals.q} 
-                      onChange={(v) => handleUpdate(o.orderId, 'q', v)}
-                      onKeyDown={(e) => handleKeyDown(e, o)}
-                      onBlur={() => handleRevert(o.orderId, o)}
-                      style={{ 
-                        width: '100%', 
-                        height: '22px', 
-                        textAlign: 'right', 
-                        fontSize: '11px',
-                        border: isModified ? '1px solid var(--accent-blue)' : '1px solid transparent',
-                        padding: '0 4px'
-                      }} 
-                    />
-                  </td>
-                  <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: '11px' }}>{o.filled.toString()}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button 
-                      className="modern-button btn-sell" 
-                      onClick={() => onCancel(o)}
-                      style={{ padding: '2px 4px', fontSize: '10px', height: '22px', minWidth: '45px' }}
-                    >
-                      Cancel
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {orders.length === 0 && (
+        {sortedSymbols.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', fontSize: '13px' }}>
             No open orders
           </div>
+        ) : (
+          <table className="modern-table" style={{ tableLayout: 'fixed' }}>
+            <thead>
+              <tr>
+                <th style={{ width: '50px', textAlign: 'right' }}>ID</th>
+                <th style={{ width: '42px', textAlign: 'right' }}>Side</th>
+                <th style={{ textAlign: 'right', width: '80px' }}>Price</th>
+                <th style={{ textAlign: 'right', width: '70px' }}>Qty</th>
+                <th style={{ textAlign: 'right', width: '45px' }}>Fill</th>
+                <th style={{ textAlign: 'right', width: '55px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedSymbols.map(sid => (
+                <React.Fragment key={sid}>
+                  <tr className="symbol-group-header" onClick={() => toggleSymbol(sid)}>
+                    <td colSpan={6}>
+                      <div className="symbol-group-title">
+                        <span className={`expand-icon ${expandedSymbols.has(sid) ? 'expanded' : ''}`}>▼</span>
+                        Symbol {sid} ({ordersBySymbol[sid].length})
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedSymbols.has(sid) && ordersBySymbol[sid].map((o, index) => {
+                    const vals = editValues[o.orderId] || { p: o.p.toString(), q: o.q.toString() };
+                    const isModified = vals.p !== o.p.toString() || vals.q !== o.q.toString();
+                    const displayId = `**${o.orderId.slice(-6)}`;
+                    
+                    return (
+                      <tr 
+                        key={o.orderId} 
+                        style={{ 
+                          borderBottom: '1px solid var(--border-color)',
+                          backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'
+                        }}
+                      >
+                        <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={o.orderId}>{displayId}</td>
+                        <td style={{ 
+                          textAlign: 'right',
+                          color: o.side === Side.Buy ? 'var(--accent-green)' : o.side === Side.Sell ? 'var(--accent-red)' : 'var(--text-secondary)',
+                          fontWeight: 600,
+                          fontSize: '10px'
+                        }}>
+                          {Side[o.side]}
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <NumericInput 
+                            className="editable-cell-input"
+                            value={vals.p} 
+                            onChange={(v) => handleUpdate(o.orderId, 'p', v)}
+                            onKeyDown={(e) => handleKeyDown(e, o)}
+                            onBlur={() => handleRevert(o.orderId, o)}
+                            style={{ 
+                              width: '100%', 
+                              height: '22px', 
+                              textAlign: 'right', 
+                              fontSize: '11px',
+                              border: isModified ? '1px solid var(--accent-blue)' : '1px solid transparent',
+                              padding: '0 4px'
+                            }} 
+                          />
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <NumericInput 
+                            className="editable-cell-input"
+                            value={vals.q} 
+                            onChange={(v) => handleUpdate(o.orderId, 'q', v)}
+                            onKeyDown={(e) => handleKeyDown(e, o)}
+                            onBlur={() => handleRevert(o.orderId, o)}
+                            style={{ 
+                              width: '100%', 
+                              height: '22px', 
+                              textAlign: 'right', 
+                              fontSize: '11px',
+                              border: isModified ? '1px solid var(--accent-blue)' : '1px solid transparent',
+                              padding: '0 4px'
+                            }} 
+                          />
+                        </td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: '11px' }}>{o.filled.toString()}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button 
+                            className="modern-button btn-sell" 
+                            onClick={() => onCancel(o)}
+                            style={{ padding: '2px 4px', fontSize: '10px', height: '22px', minWidth: '45px' }}
+                          >
+                            Cancel
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

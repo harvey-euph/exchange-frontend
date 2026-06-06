@@ -28,6 +28,7 @@ function App() {
     prices,
     openOrders,
     positions,
+    cash,
     connectMgmt,
     connectL2,
     subscribeL2,
@@ -129,10 +130,16 @@ function App() {
                 orders={Array.from(openOrders.values())}
                 onModify={handleModifyOrder}
                 onCancel={handleCancelOrder}
+                currentSymbolId={symbolId}
               />
             </div>
             <div className="right-col">
-              <Positions positions={Array.from(positions.entries())} prices={prices} />
+              <Positions 
+                positions={Array.from(positions.entries())} 
+                cash={cash} 
+                prices={prices} 
+                currentSymbolId={symbolId}
+              />
             </div>
           </div>
         </div>

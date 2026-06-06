@@ -13,7 +13,7 @@ import { OrderType } from '../fbs/exchange/order-type';
 import { ClientRequest } from '../fbs/exchange/client-request';
 import { ClientRequestData as ClientReqData } from '../fbs/exchange/client-request-data';
 import { PositionRequest } from '../fbs/exchange/position-request';
-import type { OrderData, ConnectedState } from '../types';
+import type { OrderData, ConnectedState, SymbolPosition } from '../types';
 
 /**
  * Simple DJB2-like hash for mapping alphanumeric strings to uint32
@@ -32,7 +32,8 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
   const [asks, setAsks] = useState<Map<bigint, bigint>>(new Map());
   const [prices, setPrices] = useState<Map<number, bigint>>(new Map());
   const [openOrders, setOpenOrders] = useState<Map<string, OrderData>>(new Map());
-  const [positions, setPositions] = useState<Map<number, bigint>>(new Map());
+  const [positions, setPositions] = useState<Map<number, SymbolPosition>>(new Map());
+  const [cash, setCash] = useState<bigint>(0n);
   const [subscribedSymbols, setSubscribedSymbols] = useState<Set<number>>(new Set());
 
   const inflightOrdersRef = useRef<Map<string, { side: Side, symbolId: number }>>(new Map());
@@ -155,16 +156,80 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
       });
 
       if (side !== Side.None) {
-        const fillQty = side === Side.Buy ? q : -q;
-        const cashQty = -(fillQty * p);
+        const fillQty = q;
+        const fillPrice = p;
+        const cashValue = q * p;
+        const cashDelta = side === Side.Buy ? -cashValue : cashValue;
+        
+        setCash(prev => prev + cashDelta);
+        
         setPositions(pPrev => {
           const pNext = new Map(pPrev);
-          // Update Traded Symbol
-          const currentSym = pNext.get(sId) || 0n;
-          pNext.set(sId, currentSym + fillQty);
-          // Update CASH (Symbol 0)
-          const currentCash = pNext.get(0) || 0n;
-          pNext.set(0, currentCash + cashQty);
+          let currentPos = pNext.get(sId);
+          if (!currentPos) {
+            currentPos = {
+              symbolId: sId,
+              side: Side.None,
+              lots: [],
+              totalQuantity: 0n,
+              averagePrice: 0n,
+              realizedPnL: 0n,
+            };
+          }
+
+          const nextPos: SymbolPosition = { ...currentPos, lots: currentPos.lots.map(l => ({...l})) };
+          let remainingFillQty = fillQty;
+
+          if (nextPos.side === Side.None || nextPos.side === side) {
+            nextPos.side = side;
+            nextPos.lots.push({ price: fillPrice, quantity: fillQty, timestamp: Date.now(), orderId });
+            nextPos.totalQuantity += fillQty;
+          } else {
+            // Opposite side trade: apply FIFO
+            while (remainingFillQty > 0n && nextPos.lots.length > 0) {
+              const oldestLot = nextPos.lots[0];
+              if (remainingFillQty >= oldestLot.quantity) {
+                const closedQty = oldestLot.quantity;
+                const pnl = nextPos.side === Side.Buy 
+                  ? (fillPrice - oldestLot.price) * closedQty 
+                  : (oldestLot.price - fillPrice) * closedQty;
+                
+                nextPos.realizedPnL += pnl;
+                remainingFillQty -= closedQty;
+                nextPos.totalQuantity -= closedQty;
+                nextPos.lots.shift();
+              } else {
+                const closedQty = remainingFillQty;
+                const pnl = nextPos.side === Side.Buy 
+                  ? (fillPrice - oldestLot.price) * closedQty 
+                  : (oldestLot.price - fillPrice) * closedQty;
+
+                nextPos.realizedPnL += pnl;
+                oldestLot.quantity -= closedQty;
+                nextPos.totalQuantity -= closedQty;
+                remainingFillQty = 0n;
+              }
+            }
+
+            if (remainingFillQty > 0n) {
+              nextPos.side = side;
+              nextPos.lots.push({ price: fillPrice, quantity: remainingFillQty, timestamp: Date.now(), orderId });
+              nextPos.totalQuantity = remainingFillQty;
+            } else if (nextPos.lots.length === 0) {
+              nextPos.side = Side.None;
+              nextPos.totalQuantity = 0n;
+            }
+          }
+
+          // Update average price
+          if (nextPos.totalQuantity > 0n) {
+            const totalCost = nextPos.lots.reduce((acc, lot) => acc + lot.price * lot.quantity, 0n);
+            nextPos.averagePrice = totalCost / nextPos.totalQuantity;
+          } else {
+            nextPos.averagePrice = 0n;
+          }
+
+          pNext.set(sId, nextPos);
           return pNext;
         });
       }
@@ -197,6 +262,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     ws.onopen = () => {
       setOpenOrders(new Map());
       setPositions(new Map());
+      setCash(0n);
       notifiedExecIds.current.clear();
       mgmtReadyNotifiedRef.current = false;
       addMgmtLog(`Connected ClientID=${clientId}`);
@@ -217,12 +283,38 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
           const posResp = response.data(new PositionResponse()) as PositionResponse;
           if (posResp) {
             const sId = posResp.symbolId();
-            setPositions(prev => {
-              const next = new Map(prev);
-              next.set(sId, posResp.position());
-              return next;
-            });
-            addMgmtLog(`Position Sync: Sym=${sId} Qty=${posResp.position()}`);
+            const qty = posResp.position();
+            if (sId === 0) {
+              setCash(qty);
+            } else {
+              setPositions(prev => {
+                const next = new Map(prev);
+                let current = next.get(sId);
+                const side = qty > 0n ? Side.Buy : (qty < 0n ? Side.Sell : Side.None);
+                const absQty = qty > 0n ? qty : -qty;
+
+                if (!current) {
+                  current = {
+                    symbolId: sId,
+                    side: side,
+                    lots: qty !== 0n ? [{ price: 0n, quantity: absQty, timestamp: Date.now(), orderId: 'sync' }] : [],
+                    totalQuantity: absQty,
+                    averagePrice: 0n,
+                    realizedPnL: 0n,
+                  };
+                } else {
+                  if (current.totalQuantity !== absQty || current.side !== side) {
+                    current.totalQuantity = absQty;
+                    current.side = side;
+                    // Reset lots as they are out of sync
+                    current.lots = qty !== 0n ? [{ price: current.averagePrice, quantity: absQty, timestamp: Date.now(), orderId: 'sync' }] : [];
+                  }
+                }
+                next.set(sId, current);
+                return next;
+              });
+            }
+            addMgmtLog(`Position Sync: Sym=${sId} Qty=${qty}`);
             if (sId !== 0) subscribeL2(sId);
           }
         }
@@ -418,6 +510,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     prices,
     openOrders,
     positions,
+    cash,
     connectMgmt,
     connectL2,
     subscribeL2,
