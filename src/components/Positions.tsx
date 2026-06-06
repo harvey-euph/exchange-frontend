@@ -21,8 +21,8 @@ export const Positions: React.FC<PositionsProps> = ({ positions, prices }) => {
 
   return (
     <div className="modern-card positions-section">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-        <h2 style={{ fontSize: '13px', margin: 0, color: 'var(--text-primary)' }}>Positions</h2>
+      <div className="block-header">
+        <h2 className="block-title">Positions</h2>
         <div style={{ textAlign: 'right' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginRight: '8px' }}>Total Value:</span>
           <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 'bold', fontFamily: 'var(--font-mono)' }}>

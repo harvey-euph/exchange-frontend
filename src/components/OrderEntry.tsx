@@ -16,41 +16,46 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
 }) => {
   return (
     <div className="modern-card" style={{ padding: '12px' }}>
-      <h2 style={{ fontSize: '13px', margin: '0 0 12px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', color: 'var(--text-primary)' }}>Order Entry</h2>
-      <div className="order-entry-controls">
-        <div style={{ flex: 1, minWidth: '120px' }}>
-          <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>Price</div>
+      <div className="block-header">
+        <h2 className="block-title">Order Entry</h2>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '60px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>Price</div>
           <NumericInput 
             value={price} 
             onChange={setPrice} 
-            style={{ width: '100%', height: '36px', boxSizing: 'border-box' }} 
+            style={{ flex: 1, height: '32px', boxSizing: 'border-box' }} 
           />
         </div>
-        <div style={{ flex: 1, minWidth: '120px' }}>
-          <div style={{ marginBottom: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>Quantity</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '60px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>Qty</div>
           <NumericInput 
             value={quantity} 
             onChange={setQuantity} 
-            style={{ width: '100%', height: '36px', boxSizing: 'border-box' }} 
+            style={{ flex: 1, height: '32px', boxSizing: 'border-box' }} 
           />
         </div>
-        <div className="order-entry-buttons" style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            className="modern-button btn-buy" 
-            onClick={() => onSendOrder(Side.Buy)} 
-            disabled={disabled}
-            style={{ padding: '0 32px', height: '36px', fontSize: '13px' }}
-          >
-            BUY
-          </button>
-          <button 
-            className="modern-button btn-sell" 
-            onClick={() => onSendOrder(Side.Sell)} 
-            disabled={disabled}
-            style={{ padding: '0 32px', height: '36px', fontSize: '13px' }}
-          >
-            SELL
-          </button>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+          <div style={{ width: '60px' }} /> {/* Spacer to align buttons under inputs */}
+          <div className="order-entry-buttons" style={{ flex: 1, display: 'flex', gap: '12px' }}>
+            <button 
+              className="modern-button btn-buy" 
+              onClick={() => onSendOrder(Side.Buy)} 
+              disabled={disabled}
+              style={{ flex: 1, height: '36px', fontSize: '13px', fontWeight: 700 }}
+            >
+              BUY
+            </button>
+            <button 
+              className="modern-button btn-sell" 
+              onClick={() => onSendOrder(Side.Sell)} 
+              disabled={disabled}
+              style={{ flex: 1, height: '36px', fontSize: '13px', fontWeight: 700 }}
+            >
+              SELL
+            </button>
+          </div>
         </div>
       </div>
     </div>

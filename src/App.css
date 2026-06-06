@@ -52,8 +52,14 @@ body {
   transition: border-color 0.2s ease;
 }
 
-.modern-input:focus {
-  border-color: var(--accent-blue);
+.editable-cell-input {
+  background-color: rgba(86, 156, 214, 0.08) !important;
+  border: 1px solid rgba(86, 156, 214, 0.2) !important;
+}
+
+.editable-cell-input:focus {
+  background-color: var(--bg-input) !important;
+  border-color: var(--accent-blue) !important;
 }
 
 .modern-button {
@@ -73,6 +79,36 @@ body {
 .modern-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.block-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* text-transform: uppercase; */
+  letter-spacing: 0.05em;
+}
+
+.block-title::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 14px;
+  background-color: var(--accent-blue);
+  border-radius: 4px;
 }
 
 .btn-buy { background-color: var(--accent-green); }
@@ -264,10 +300,25 @@ body {
   gap: 12px;
 }
 
-.bottom-row {
+.layout-columns {
   display: flex;
   gap: 12px;
   flex: 1;
+  min-height: 0;
+}
+
+.left-col {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.right-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 
@@ -290,7 +341,7 @@ body {
     flex-wrap: wrap;
   }
 
-  .bottom-row {
+  .layout-columns {
     flex-direction: column;
     flex: none;
     min-height: auto;
@@ -318,12 +369,6 @@ body {
   width: 240px;
   display: flex;
   flex-direction: column;
-}
-
-.order-entry-controls {
-  display: flex;
-  gap: 32px;
-  align-items: flex-end;
 }
 
 @media (max-width: 992px) {
@@ -357,15 +402,17 @@ body {
 }
 
 .open-orders-section {
-  flex: 2.5;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .positions-section {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 @media (max-width: 992px) {

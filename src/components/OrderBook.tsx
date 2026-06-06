@@ -40,19 +40,19 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
 
   return (
     <div className="modern-card order-book-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-        <h2 style={{ fontSize: '13px', margin: 0, color: 'var(--text-primary)' }}>
-          {isCash ? 'CASH' : `Order Book: ${symbolId}`}
-        </h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="block-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button className="reconnect-btn-modern" onClick={onReconnectL2} title="Reconnect L2">↻</button>
-          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Sym:</span>
+          {/* <h2 className="block-title">Order Book</h2> */}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Symbol:</span>
           <input 
             type="text" 
             className="modern-input"
             value={symbolId} 
             onChange={e => onSymbolChange(e.target.value)} 
-            style={{ width: '35px', padding: '2px 4px' }} 
+            style={{ width: '40px', padding: '2px 6px' }} 
           />
         </div>
       </div>

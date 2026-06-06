@@ -79,7 +79,9 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
 
   return (
     <div className="modern-card open-orders-section">
-      <h2 style={{ fontSize: '13px', margin: '0 0 16px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', color: 'var(--text-primary)' }}>Open Orders</h2>
+      <div className="block-header">
+        <h2 className="block-title">Open Orders</h2>
+      </div>
       <div className="table-container custom-scroll">
         <table className="modern-table" style={{ tableLayout: 'fixed' }}>
           <thead>
@@ -117,6 +119,7 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <NumericInput 
+                      className="editable-cell-input"
                       value={vals.p} 
                       onChange={(v) => handleUpdate(o.orderId, 'p', v)}
                       onKeyDown={(e) => handleKeyDown(e, o)}
@@ -127,13 +130,13 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                         textAlign: 'right', 
                         fontSize: '11px',
                         border: isModified ? '1px solid var(--accent-blue)' : '1px solid transparent',
-                        backgroundColor: isModified ? 'var(--bg-input)' : 'transparent',
                         padding: '0 4px'
                       }} 
                     />
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <NumericInput 
+                      className="editable-cell-input"
                       value={vals.q} 
                       onChange={(v) => handleUpdate(o.orderId, 'q', v)}
                       onKeyDown={(e) => handleKeyDown(e, o)}
@@ -144,7 +147,6 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                         textAlign: 'right', 
                         fontSize: '11px',
                         border: isModified ? '1px solid var(--accent-blue)' : '1px solid transparent',
-                        backgroundColor: isModified ? 'var(--bg-input)' : 'transparent',
                         padding: '0 4px'
                       }} 
                     />

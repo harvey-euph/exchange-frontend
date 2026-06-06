@@ -117,20 +117,23 @@ function App() {
         />
 
         <div className="right-panel">
-          <OrderEntry 
-            price={price} quantity={quantity}
-            setPrice={setPrice} setQuantity={setQuantity}
-            onSendOrder={handleSendOrder}
-            disabled={!connected.mgmtReady}
-          />
-
-          <div className="bottom-row">
-            <OpenOrders 
-              orders={Array.from(openOrders.values())}
-              onModify={handleModifyOrder}
-              onCancel={handleCancelOrder}
-            />
-            <Positions positions={Array.from(positions.entries())} prices={prices} />
+          <div className="layout-columns">
+            <div className="left-col">
+              <OrderEntry 
+                price={price} quantity={quantity}
+                setPrice={setPrice} setQuantity={setQuantity}
+                onSendOrder={handleSendOrder}
+                disabled={!connected.mgmtReady}
+              />
+              <OpenOrders 
+                orders={Array.from(openOrders.values())}
+                onModify={handleModifyOrder}
+                onCancel={handleCancelOrder}
+              />
+            </div>
+            <div className="right-col">
+              <Positions positions={Array.from(positions.entries())} prices={prices} />
+            </div>
           </div>
         </div>
       </main>
