@@ -116,6 +116,20 @@ body {
 .btn-primary { background-color: var(--accent-blue); }
 .btn-secondary { background-color: var(--bg-input); color: var(--text-primary); }
 
+.flat-btn {
+  background-color: rgba(0, 122, 255, 0.25) !important;
+  color: #007aff !important;
+  border: 1px solid rgba(0, 122, 255, 0.4) !important;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.flat-btn:hover {
+  background-color: rgba(0, 122, 255, 0.4) !important;
+  border-color: #007aff !important;
+  transform: translateY(-1px);
+}
+
 .modern-table {
   width: 100%;
   border-collapse: collapse;
@@ -126,8 +140,9 @@ body {
   font-size: clamp(10px, 2.5vw, 11px); /* 比例縮放 */
   font-weight: 500;
   text-align: left;
-  padding-bottom: 8px;
-  text-transform: uppercase;
+  padding: 0 0 10px 0;
+  line-height: 1;
+  /* text-transform: uppercase; */
   letter-spacing: 0.5px;
 }
 

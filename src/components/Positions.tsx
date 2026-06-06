@@ -79,7 +79,8 @@ export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, c
           <thead>
             <tr>
               <th style={{ width: '45px', textAlign: 'left' }}>Sym</th>
-              <th style={{ textAlign: 'right', width: '70px' }}>Pos</th>
+              <th style={{ textAlign: 'right', width: '60px' }}>Pos</th>
+              <th style={{ width: '40px' }}></th>
               <th style={{ textAlign: 'right', width: '80px' }}>Avg/Mark</th>
               <th style={{ textAlign: 'right', width: '85px' }}>PnL (U/R)</th>
             </tr>
@@ -136,6 +137,17 @@ export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, c
                     }}>
                       {displayPos.toString()}
                     </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {pos.totalQuantity !== 0n && onFlatten && (
+                        <button 
+                          className="modern-button btn-secondary flat-btn" 
+                          onClick={(e) => { e.stopPropagation(); onFlatten(sId, pos.side, pos.totalQuantity); }}
+                          style={{ padding: '0px 4px', fontSize: '8px', height: '14px', lineHeight: '12px', minWidth: 'auto' }}
+                        >
+                          FLAT
+                        </button>
+                      )}
+                    </td>
                     <td style={{ textAlign: 'right', fontSize: '10px' }}>
                       <div style={{ color: 'var(--text-primary)' }}>{pos.averagePrice.toString()}</div>
                       <div style={{ color: 'var(--text-secondary)' }}>{markPrice.toString()}</div>
@@ -144,19 +156,8 @@ export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, c
                       <div style={{ color: unrealizedPnL >= 0n ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                         {unrealizedPnL >= 0n ? '+' : ''}{unrealizedPnL.toString()}
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
-                        <div style={{ color: pos.realizedPnL >= 0n ? 'var(--text-secondary)' : 'var(--accent-red)', opacity: 0.8 }}>
-                          {pos.realizedPnL >= 0n ? '+' : ''}{pos.realizedPnL.toString()}
-                        </div>
-                        {pos.totalQuantity !== 0n && onFlatten && (
-                          <button 
-                            className="modern-button btn-secondary" 
-                            onClick={(e) => { e.stopPropagation(); onFlatten(sId, pos.side, pos.totalQuantity); }}
-                            style={{ padding: '0px 4px', fontSize: '8px', height: '14px', lineHeight: '12px', minWidth: 'auto', background: 'rgba(255,255,255,0.05)' }}
-                          >
-                            FLAT
-                          </button>
-                        )}
+                      <div style={{ color: pos.realizedPnL >= 0n ? 'var(--text-secondary)' : 'var(--accent-red)', opacity: 0.8 }}>
+                        {pos.realizedPnL >= 0n ? '+' : ''}{pos.realizedPnL.toString()}
                       </div>
                     </td>
                   </tr>
@@ -170,21 +171,23 @@ export const Positions: React.FC<PositionsProps> = ({ positions, cash, prices, c
                         <td style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-secondary)' }}>
                           {gl.quantity.toString()}
                         </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {onFlatten && (
+                            <button 
+                              className="modern-button btn-secondary flat-btn" 
+                              onClick={(e) => { e.stopPropagation(); onFlatten(sId, pos.side, gl.quantity); }}
+                              style={{ padding: '0px 3px', fontSize: '7px', height: '12px', lineHeight: '10px', minWidth: 'auto' }}
+                            >
+                              FLAT
+                            </button>
+                          )}
+                        </td>
                         <td style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-secondary)' }}>
                           {avgPrice.toString()}
                         </td>
                         <td style={{ textAlign: 'right', fontSize: '9px', color: 'var(--text-secondary)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '6px' }}>
-                            <span>{new Date(gl.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                            {onFlatten && (
-                              <button 
-                                className="modern-button btn-secondary" 
-                                onClick={(e) => { e.stopPropagation(); onFlatten(sId, pos.side, gl.quantity); }}
-                                style={{ padding: '0px 3px', fontSize: '7px', height: '12px', lineHeight: '10px', minWidth: 'auto', background: 'rgba(255,255,255,0.05)' }}
-                              >
-                                X
-                              </button>
-                            )}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <span>{new Date(gl.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
                           </div>
                         </td>
                       </tr>

@@ -139,12 +139,12 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
           <table className="modern-table" style={{ tableLayout: 'fixed' }}>
             <thead>
               <tr>
-                <th style={{ width: '50px', textAlign: 'right' }}>ID</th>
-                <th style={{ width: '42px', textAlign: 'right', padding: '2px 4px', fontSize: '11px', verticalAlign: 'middle' }}>Side</th>
-                <th style={{ textAlign: 'right', width: '80px', padding: '2px 4px', fontSize: '11px', verticalAlign: 'middle' }}>Price</th>
-                <th style={{ textAlign: 'right', width: '70px' }}>Qty</th>
-                <th style={{ textAlign: 'right', width: '45px' }}>Fill</th>
-                <th style={{ textAlign: 'right', width: '55px' }}>Action</th>
+                <th style={{ width: '70px', textAlign: 'right' }}>Order ID</th>
+                <th style={{ width: '30px', textAlign: 'right' }}>Side</th>
+                <th style={{ width: '65px', textAlign: 'right' }}>Price</th>
+                <th style={{ width: '65px', textAlign: 'right' }}>Qty</th>
+                <th style={{ width: '45px', textAlign: 'right' }}>Fill</th>
+                <th style={{ width: '55px', textAlign: 'right' }}></th>
               </tr>
             </thead>
             <tbody>
@@ -161,7 +161,7 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
                   {expandedSymbols.has(sid) && ordersBySymbol[sid].map((o, index) => {
                     const vals = editValues[o.orderId] || { p: o.p.toString(), q: o.q.toString() };
                     const isModified = vals.p !== o.p.toString() || vals.q !== o.q.toString();
-                    const displayId = `**${o.orderId.slice(-6)}`;
+                    const displayId = `${o.orderId}`;
                     
                     return (
                       <tr 
