@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Side } from '../fbs/exchange/side';
 
 interface OrderBookProps {
   symbolId: string;
   onSymbolChange: (v: string) => void;
   bids: { price: bigint; quantity: bigint }[];
   asks: { price: bigint; quantity: bigint }[];
-  onPriceClick?: (price: string) => void;
+  onPriceClick?: (price: string, side: Side, peggedLevel?: number | null) => void;
   onReconnectL2?: () => void;
 }
 
@@ -43,7 +44,6 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
       <div className="block-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button className="reconnect-btn-modern" onClick={onReconnectL2} title="Reconnect L2">↻</button>
-          {/* <h2 className="block-title">Order Book</h2> */}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Symbol:</span>
@@ -66,27 +66,51 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
           <table className="modern-table">
             <thead>
               <tr>
-                <th style={{ width: '40px' }}>Side</th>
+                <th style={{ width: '60px' }}>Level</th>
                 <th style={{ textAlign: 'right' }}>Price</th>
                 <th style={{ textAlign: 'right' }}>Size</th>
               </tr>
             </thead>
             <tbody>
-              {paddedAsks.map((level, i) => (
-                <tr 
-                  key={`ask-${i}`} 
-                  style={{ cursor: level ? 'pointer' : 'default', height: '22px' }}
-                  onClick={() => level && onPriceClick?.(level.price.toString())}
-                >
-                  <td style={{ color: level ? 'var(--accent-red)' : 'transparent', fontWeight: 600 }}>ASK</td>
-                  <td style={{ textAlign: 'right', color: level ? 'var(--text-primary)' : 'var(--border-color)' }}>
-                    {level ? level.price.toString() : '-'}
-                  </td>
-                  <td style={{ textAlign: 'right', color: level ? 'var(--text-secondary)' : 'var(--border-color)' }}>
-                    {level ? level.quantity.toString() : '-'}
-                  </td>
-                </tr>
-              ))}
+              {paddedAsks.map((level, i) => {
+                const levelNum = 5 - i;
+                return (
+                  <tr 
+                    key={`ask-${i}`} 
+                    style={{ height: '22px' }}
+                  >
+                    <td style={{ padding: '2px 0' }}>
+                      <button 
+                        className="modern-button btn-sell" 
+                        style={{ 
+                          fontSize: '9px', 
+                          padding: '1px 4px', 
+                          width: '100%', 
+                          opacity: level ? 1 : 0.3,
+                          height: '18px'
+                        }}
+                        disabled={!level}
+                        onClick={() => onPriceClick?.('PEG', Side.Sell, levelNum)}
+                      >
+                        ASK {levelNum}
+                      </button>
+                    </td>
+                    <td 
+                      style={{ 
+                        textAlign: 'right', 
+                        color: level ? 'var(--text-primary)' : 'var(--border-color)',
+                        cursor: level ? 'pointer' : 'default'
+                      }}
+                      onClick={() => level && onPriceClick?.(level.price.toString(), Side.Sell, null)}
+                    >
+                      {level ? level.price.toString() : '-'}
+                    </td>
+                    <td style={{ textAlign: 'right', color: level ? 'var(--text-secondary)' : 'var(--border-color)' }}>
+                      {level ? level.quantity.toString() : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
               
               <tr style={{ height: '36px', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
                 <td colSpan={3} style={{ 
@@ -101,21 +125,45 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
                 </td>
               </tr>
 
-              {paddedBids.map((level, i) => (
-                <tr 
-                  key={`bid-${i}`} 
-                  style={{ cursor: level ? 'pointer' : 'default', height: '22px' }}
-                  onClick={() => level && onPriceClick?.(level.price.toString())}
-                >
-                  <td style={{ color: level ? 'var(--accent-green)' : 'transparent', fontWeight: 600 }}>BID</td>
-                  <td style={{ textAlign: 'right', color: level ? 'var(--text-primary)' : 'var(--border-color)' }}>
-                    {level ? level.price.toString() : '-'}
-                  </td>
-                  <td style={{ textAlign: 'right', color: level ? 'var(--text-secondary)' : 'var(--border-color)' }}>
-                    {level ? level.quantity.toString() : '-'}
-                  </td>
-                </tr>
-              ))}
+              {paddedBids.map((level, i) => {
+                const levelNum = i + 1;
+                return (
+                  <tr 
+                    key={`bid-${i}`} 
+                    style={{ height: '22px' }}
+                  >
+                    <td style={{ padding: '2px 0' }}>
+                      <button 
+                        className="modern-button btn-buy" 
+                        style={{ 
+                          fontSize: '9px', 
+                          padding: '1px 4px', 
+                          width: '100%', 
+                          opacity: level ? 1 : 0.3,
+                          height: '18px'
+                        }}
+                        disabled={!level}
+                        onClick={() => onPriceClick?.('PEG', Side.Buy, levelNum)}
+                      >
+                        BID {levelNum}
+                      </button>
+                    </td>
+                    <td 
+                      style={{ 
+                        textAlign: 'right', 
+                        color: level ? 'var(--text-primary)' : 'var(--border-color)',
+                        cursor: level ? 'pointer' : 'default'
+                      }}
+                      onClick={() => level && onPriceClick?.(level.price.toString(), Side.Buy, null)}
+                    >
+                      {level ? level.price.toString() : '-'}
+                    </td>
+                    <td style={{ textAlign: 'right', color: level ? 'var(--text-secondary)' : 'var(--border-color)' }}>
+                      {level ? level.quantity.toString() : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

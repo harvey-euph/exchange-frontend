@@ -15,6 +15,8 @@ function App() {
   const [symbolId, setSymbolId] = useState('1');
   const [price, setPrice] = useState('5000');
   const [quantity, setQuantity] = useState('100');
+  const [side, setSide] = useState<Side>(Side.Buy);
+  const [peggedLevel, setPeggedLevel] = useState<number | null>(null);
   const [hasLoggedIn, setHasLoggedIn] = useState(false);
   
   const notifRef = useRef<NotificationSystemRef>(null);
@@ -64,25 +66,57 @@ function App() {
       .sort((a, b) => (a.price > b.price ? -1 : 1)), 
   [bids]);
 
-  const handleSendOrder = (side: Side) => {
+  const handlePriceClick = (newPrice: string, newSide: Side, level: number | null = null) => {
+    setPrice(newPrice);
+    setSide(newSide);
+    setPeggedLevel(level);
+  };
+
+  const handleSendOrder = (orderSide: Side) => {
     if (!connected.mgmtReady) {
       handleNotification('rejected', 'Error', 'Please login first');
       return;
     }
-    sendOrder(side, clientId, symbolId, price, quantity);
+
+    let finalPrice = price;
+    if (peggedLevel !== null) {
+      // Resolve pegged price at the moment of send
+      if (orderSide === Side.Buy) {
+        // sortedBids is [Best(1) ... Worst(5)]
+        const target = sortedBids[peggedLevel - 1]?.price;
+        if (target !== undefined) {
+          finalPrice = target.toString();
+        } else {
+          handleNotification('rejected', 'Error', `No level BID ${peggedLevel} to peg to`);
+          return;
+        }
+      } else {
+        // sortedAsks is [Worst(5) ... Best(1)]
+        // Best ASK(1) is the last element
+        const target = sortedAsks[sortedAsks.length - peggedLevel]?.price;
+        if (target !== undefined) {
+          finalPrice = target.toString();
+        } else {
+          handleNotification('rejected', 'Error', `No level ASK ${peggedLevel} to peg to`);
+          return;
+        }
+      }
+    }
+
+    sendOrder(orderSide, clientId, symbolId, finalPrice, quantity);
   };
   
   const handleCancelOrder = (order: any) => cancelOrder(order, clientId);
   const handleModifyOrder = (order: any, newPrice: string, newQty: string) => modifyOrder(order, clientId, newPrice, newQty);
 
-  const handleFlatten = useCallback((sId: number, side: Side, quantity: bigint) => {
+  const handleFlatten = useCallback((sId: number, flattenSide: Side, flattenQuantity: bigint) => {
     if (!connected.mgmtReady) {
       handleNotification('rejected', 'Error', 'Please login first');
       return;
     }
-    const oppositeSide = side === Side.Buy ? Side.Sell : Side.Buy;
+    const oppositeSide = flattenSide === Side.Buy ? Side.Sell : Side.Buy;
     const markPrice = prices.get(sId) || 0n;
-    sendOrder(oppositeSide, clientId, sId.toString(), markPrice.toString(), quantity.toString(), OrderType.Market);
+    sendOrder(oppositeSide, clientId, sId.toString(), markPrice.toString(), flattenQuantity.toString(), OrderType.Market);
   }, [connected.mgmtReady, clientId, prices, sendOrder, handleNotification]);
 
   return (
@@ -134,19 +168,13 @@ function App() {
       <main className="main-content">
         <OrderBook 
           symbolId={symbolId} onSymbolChange={setSymbolId}
-          bids={sortedBids} asks={sortedAsks} onPriceClick={setPrice} 
+          bids={sortedBids} asks={sortedAsks} onPriceClick={handlePriceClick} 
           onReconnectL2={connectL2}
         />
 
         <div className="right-panel">
           <div className="layout-columns">
             <div className="left-col">
-              <OrderEntry 
-                price={price} quantity={quantity}
-                setPrice={setPrice} setQuantity={setQuantity}
-                onSendOrder={handleSendOrder}
-                disabled={!connected.mgmtReady}
-              />
               <OpenOrders 
                 orders={Array.from(openOrders.values())}
                 onModify={handleModifyOrder}
@@ -155,6 +183,12 @@ function App() {
               />
             </div>
             <div className="right-col">
+              <OrderEntry 
+                price={price} quantity={quantity} side={side} peggedLevel={peggedLevel}
+                setPrice={setPrice} setQuantity={setQuantity} setSide={setSide} setPeggedLevel={setPeggedLevel}
+                onSendOrder={handleSendOrder}
+                disabled={!connected.mgmtReady}
+              />
               <Positions 
                 positions={Array.from(positions.entries())} 
                 cash={cash} 
