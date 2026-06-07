@@ -13,6 +13,7 @@ import { OrderType } from '../fbs/exchange/order-type';
 import { ClientRequest } from '../fbs/exchange/client-request';
 import { ClientRequestData as ClientReqData } from '../fbs/exchange/client-request-data';
 import { PositionRequest } from '../fbs/exchange/position-request';
+import { RejectCode } from '../fbs/exchange/reject-code';
 import type { OrderData, ConnectedState, SymbolPosition } from '../types';
 
 /**
@@ -25,6 +26,15 @@ function hashClientId(id: string): number {
   }
   return (hash >>> 0); // Convert to unsigned 32-bit integer
 }
+
+const REJECT_MESSAGES: Record<number, string> = {
+  [RejectCode.PriceInvalid]: 'Invalid Price',
+  [RejectCode.OrderNotFound]: 'Order Not Found',
+  [RejectCode.InvalidAction]: 'Invalid Action',
+  [RejectCode.InvalidModify]: 'Invalid Modify Request',
+  [RejectCode.DuplicateOrderID]: 'Duplicate Order ID',
+  [RejectCode.Unknown]: 'Unknown Error',
+};
 
 export function useExchange(activeSymbolId: number, onNotification?: (type: 'acked' | 'rejected' | 'info', title: string, content: string) => void) {
   const [connected, setConnected] = useState<ConnectedState>({ mgmt: false, mgmtReady: false, l2: false });
@@ -103,9 +113,10 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     }
 
     if (rejectCode !== 0) {
-      addMgmtLog(`[Error] Order Rejected: ID=${orderId} Code=${rejectCode}`);
+      const msg = REJECT_MESSAGES[rejectCode] || `Error Code: ${rejectCode}`;
+      addMgmtLog(`[Error] Order Rejected: ID=${orderId} Code=${rejectCode} (${msg})`);
       if (shouldNotify) {
-        onNotification?.('rejected', 'Order Rejected', `ID: ${orderId} Code: ${rejectCode}`);
+        onNotification?.('rejected', 'Order Rejected', `${msg} (ID: ${orderId})`);
       }
       return;
     }

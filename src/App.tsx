@@ -119,6 +119,10 @@ function App() {
     sendOrder(oppositeSide, clientId, sId.toString(), markPrice.toString(), flattenQuantity.toString(), OrderType.Market);
   }, [connected.mgmtReady, clientId, prices, sendOrder, handleNotification]);
 
+  const handleLogin = () => {
+    connectMgmt(clientId, symbolId);
+  };
+
   return (
     <div className="app-container">
       <NotificationSystem ref={notifRef} />
@@ -128,28 +132,6 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '28px', height: '28px', backgroundColor: 'var(--accent-blue)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '16px' }}>H</div>
             <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '-0.5px' }}>Harvey Exchange</h1>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '2px 12px', backgroundColor: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Client ID</span>
-              <input 
-                type="text" 
-                className="modern-input"
-                value={clientId} 
-                onChange={(e) => setClientId(e.target.value)} 
-                disabled={hasLoggedIn}
-                style={{ width: '50px', padding: '2px 6px', opacity: hasLoggedIn ? 0.6 : 1 }} 
-              />
-            </div>
-            <button 
-              className={`modern-button ${connected.mgmtReady ? 'btn-primary' : (connected.mgmt ? 'btn-secondary' : 'btn-primary')}`}
-              onClick={() => connectMgmt(clientId, symbolId)}
-              disabled={hasLoggedIn}
-              style={{ padding: '4px 12px', fontSize: '11px' }}
-            >
-              {connected.mgmt ? (connected.mgmtReady ? "✓ Connected" : "Syncing...") : "Login"}
-            </button>
           </div>
         </div>
 
@@ -184,6 +166,10 @@ function App() {
             </div>
             <div className="right-col">
               <OrderEntry 
+                isLoggedIn={connected.mgmtReady}
+                clientId={clientId}
+                setClientId={setClientId}
+                onLogin={handleLogin}
                 price={price} quantity={quantity} side={side} peggedLevel={peggedLevel}
                 setPrice={setPrice} setQuantity={setQuantity} setSide={setSide} setPeggedLevel={setPeggedLevel}
                 onSendOrder={handleSendOrder}

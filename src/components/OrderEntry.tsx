@@ -3,6 +3,13 @@ import { Side } from '../fbs/exchange/side';
 import { NumericInput } from './NumericInput';
 
 interface OrderEntryProps {
+  // Login props
+  isLoggedIn: boolean;
+  clientId: string;
+  setClientId: (v: string) => void;
+  onLogin: () => void;
+  
+  // Order props
   price: string;
   quantity: string;
   side: Side;
@@ -12,10 +19,12 @@ interface OrderEntryProps {
   setSide: (s: Side) => void;
   setPeggedLevel: (p: number | null) => void;
   onSendOrder: (side: Side) => void;
+  
   disabled?: boolean;
 }
 
 export const OrderEntry: React.FC<OrderEntryProps> = ({
+  isLoggedIn, clientId, setClientId, onLogin,
   price, quantity, side, peggedLevel, 
   setPrice, setQuantity, setSide, setPeggedLevel,
   onSendOrder, disabled
@@ -28,13 +37,53 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
 
   const handleQtyChange = (v: string) => {
     setQuantity(v);
-    setPeggedLevel(null);
   };
 
   const getPegDisplay = () => {
     if (peggedLevel === null) return '';
     return `PEG TO ${side === Side.Buy ? 'BID' : 'ASK'} ${peggedLevel}`;
   };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="modern-card" style={{ padding: '12px', marginBottom: '16px' }}>
+        <div className="block-header">
+          <h2 className="block-title">Client Login</h2>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '60px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>Client ID</div>
+            <input 
+              type="text" 
+              className="modern-input"
+              value={clientId} 
+              onChange={(e) => setClientId(e.target.value)} 
+              style={{ flex: 1, height: '32px' }} 
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '60px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>Password</div>
+            <input 
+              type="password" 
+              className="modern-input"
+              value="********" 
+              disabled
+              style={{ flex: 1, height: '32px', opacity: 0.5 }} 
+            />
+          </div>
+          <div style={{ marginTop: '4px' }}>
+            <button 
+              className="modern-button btn-primary" 
+              onClick={onLogin}
+              style={{ width: '100%', height: '36px', fontSize: '13px', fontWeight: 700 }}
+            >
+              LOGIN
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modern-card" style={{ padding: '12px', marginBottom: '16px' }}>
@@ -79,9 +128,8 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
               flex: 1, 
               height: '32px', 
               boxSizing: 'border-box',
-              color: peggedLevel !== null ? 'var(--accent-blue)' : 'inherit',
-              fontWeight: peggedLevel !== null ? 700 : 'normal',
-              fontSize: peggedLevel !== null ? '11px' : '13px'
+              color: peggedLevel !== null ? 'var(--accent-blue)' : '#fff',
+              fontFamily: 'var(--font-mono)'
             }} 
             disabled={disabled}
           />
@@ -93,7 +141,13 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
           <NumericInput 
             value={quantity} 
             onChange={handleQtyChange} 
-            style={{ flex: 1, height: '32px', boxSizing: 'border-box' }} 
+            style={{ 
+              flex: 1, 
+              height: '32px', 
+              boxSizing: 'border-box',
+              color: '#fff',
+              fontFamily: 'var(--font-mono)'
+            }} 
             disabled={disabled}
           />
         </div>

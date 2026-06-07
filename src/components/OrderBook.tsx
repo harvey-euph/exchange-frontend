@@ -90,7 +90,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
                           height: '18px'
                         }}
                         disabled={!level}
-                        onClick={() => onPriceClick?.('PEG', Side.Sell, levelNum)}
+                        onClick={() => level && onPriceClick?.(level.price.toString(), Side.Sell, levelNum)}
                       >
                         ASK {levelNum}
                       </button>
@@ -143,7 +143,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
                           height: '18px'
                         }}
                         disabled={!level}
-                        onClick={() => onPriceClick?.('PEG', Side.Buy, levelNum)}
+                        onClick={() => level && onPriceClick?.(level.price.toString(), Side.Buy, levelNum)}
                       >
                         BID {levelNum}
                       </button>
