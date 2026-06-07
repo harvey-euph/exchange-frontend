@@ -8,13 +8,16 @@ interface OpenOrdersProps {
   onModify: (order: OrderData, newPrice: string, newQty: string) => void;
   onCancel: (order: OrderData) => void;
   currentSymbolId?: string;
+  noWrapper?: boolean;
+  expandedSymbols: Set<number>;
+  onToggleSymbol: (sid: number) => void;
 }
 
 export const OpenOrders: React.FC<OpenOrdersProps> = ({
-  orders, onModify, onCancel, currentSymbolId
+  orders, onModify, onCancel, currentSymbolId, noWrapper,
+  expandedSymbols, onToggleSymbol
 }) => {
   const [editValues, setEditValues] = useState<Record<string, { p: string, q: string }>>({});
-  const [expandedSymbols, setExpandedSymbols] = useState<Set<number>>(new Set());
   const lastOrdersRef = React.useRef<Map<string, { p: string, q: string }>>(new Map());
 
   // Group orders by symbolId
@@ -30,35 +33,6 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
   const sortedSymbols = useMemo(() => {
     return Object.keys(ordersBySymbol).map(Number).sort((a, b) => a - b);
   }, [ordersBySymbol]);
-
-  // Auto-expand ONLY the current symbol and collapse others when currentSymbolId changes
-  useEffect(() => {
-    if (currentSymbolId !== undefined) {
-      const sid = parseInt(currentSymbolId);
-      if (!isNaN(sid)) {
-        setExpandedSymbols(new Set([sid]));
-      }
-    }
-  }, [currentSymbolId]);
-
-  const toggleSymbol = (sid: number) => {
-    setExpandedSymbols(prev => {
-      const next = new Set(prev);
-      if (next.has(sid)) next.delete(sid);
-      else next.add(sid);
-      return next;
-    });
-  };
-
-  const expandAll = () => {
-    setExpandedSymbols(new Set(sortedSymbols));
-  };
-
-  const collapseAll = () => {
-    setExpandedSymbols(new Set());
-  };
-
-  const isAllExpanded = sortedSymbols.length > 0 && sortedSymbols.every(s => expandedSymbols.has(s));
 
   // Initialize or update edit values when orders change
   useEffect(() => {
@@ -116,20 +90,8 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
     }));
   };
 
-  return (
-    <div className="modern-card open-orders-section">
-      <div className="block-header">
-        <h2 className="block-title">Open Orders</h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button 
-            className="modern-button btn-secondary" 
-            onClick={isAllExpanded ? collapseAll : expandAll}
-            style={{ padding: '2px 8px', fontSize: '10px', height: '22px' }}
-          >
-            {isAllExpanded ? 'Collapse All' : 'Expand All'}
-          </button>
-        </div>
-      </div>
+  const content = (
+    <>
       <div className="table-container custom-scroll">
         {sortedSymbols.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)', fontSize: '13px' }}>
@@ -150,7 +112,7 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
             <tbody>
               {sortedSymbols.map(sid => (
                 <React.Fragment key={sid}>
-                  <tr className="symbol-group-header" onClick={() => toggleSymbol(sid)}>
+                  <tr className="symbol-group-header" onClick={() => onToggleSymbol(sid)}>
                     <td colSpan={6}>
                       <div className="symbol-group-title">
                         <span className={`expand-icon ${expandedSymbols.has(sid) ? 'expanded' : ''}`}>▼</span>
@@ -233,6 +195,14 @@ export const OpenOrders: React.FC<OpenOrdersProps> = ({
           </table>
         )}
       </div>
+    </>
+  );
+
+  if (noWrapper) return content;
+
+  return (
+    <div className="modern-card open-orders-section">
+      {content}
     </div>
   );
 };

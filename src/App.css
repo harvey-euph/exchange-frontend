@@ -52,6 +52,36 @@ body {
   transition: border-color 0.2s ease;
 }
 
+.modern-select {
+  background-color: var(--bg-input);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-primary);
+  padding: 2px 20px 2px 8px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='24'%20height='24'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23848e9c'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpolyline%20points='6%209%2012%2015%2018%209'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  background-size: 10px;
+}
+
+.modern-select:focus {
+  border-color: var(--accent-blue);
+}
+
+.modern-select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+
 .editable-cell-input {
   background-color: rgba(86, 156, 214, 0.08) !important;
   border: 1px solid rgba(86, 156, 214, 0.2) !important;
@@ -334,6 +364,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 12px;
   min-height: 0;
 }
 
@@ -360,6 +391,14 @@ body {
     flex-direction: column;
     flex: none;
     min-height: auto;
+  }
+
+  .left-col {
+    order: 2;
+  }
+
+  .right-col {
+    order: 1;
   }
 }
 
@@ -454,14 +493,61 @@ body {
   overflow-y: auto;
 }
 
-.open-orders-section {
+.tab-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.tab-header {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 12px;
+}
+
+.tab-item {
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+  letter-spacing: 0.05em;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.tab-item:hover {
+  color: var(--text-primary);
+}
+
+.tab-item.active {
+  color: var(--accent-blue);
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--accent-blue);
+  border-radius: 2px;
+}
+
+.tab-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
-.positions-section {
+.open-orders-section, .positions-section {
   flex: 1;
   display: flex;
   flex-direction: column;

@@ -20,6 +20,7 @@ interface OrderEntryProps {
   setPeggedLevel: (p: number | null) => void;
   onSendOrder: (side: Side) => void;
   
+  cash?: bigint;
   disabled?: boolean;
 }
 
@@ -27,7 +28,7 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
   isLoggedIn, clientId, setClientId, onLogin,
   price, quantity, side, peggedLevel, 
   setPrice, setQuantity, setSide, setPeggedLevel,
-  onSendOrder, disabled
+  onSendOrder, cash, disabled
 }) => {
 
   const handlePriceChange = (v: string) => {
@@ -89,6 +90,12 @@ export const OrderEntry: React.FC<OrderEntryProps> = ({
     <div className="modern-card" style={{ padding: '12px', marginBottom: '16px' }}>
       <div className="block-header">
         <h2 className="block-title">Order Entry</h2>
+        {cash !== undefined && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Cash:</span>
+            <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{cash.toString()}</span>
+          </div>
+        )}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {/* Side Selection */}

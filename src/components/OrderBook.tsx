@@ -14,6 +14,20 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
   const [midColor, setMidColor] = useState('var(--text-primary)');
   const prevMidRef = useRef<bigint | null>(null);
 
+  const isDefaultSymbol = symbolId === '1' || symbolId === '0';
+  const selectValue = isDefaultSymbol ? symbolId : 'custom';
+
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === 'custom') {
+      if (isDefaultSymbol) {
+        onSymbolChange('2');
+      }
+    } else {
+      onSymbolChange(val);
+    }
+  };
+
   // Take 5 best asks (lowest prices). Since asks is [High ... Low], we take the last 5.
   const displayAsks = asks.slice(-5);
   const paddedAsks = [...Array(Math.max(0, 5 - displayAsks.length)).fill(null), ...displayAsks];
@@ -47,13 +61,26 @@ export const OrderBook: React.FC<OrderBookProps> = ({ symbolId, onSymbolChange, 
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Symbol:</span>
-          <input 
-            type="text" 
-            className="modern-input"
-            value={symbolId} 
-            onChange={e => onSymbolChange(e.target.value)} 
-            style={{ width: '40px', padding: '2px 6px' }} 
-          />
+          <select 
+            className="modern-select"
+            value={selectValue} 
+            onChange={handleSelectChange} 
+            style={{ padding: '2px 24px 2px 8px', height: '24px', fontSize: '12px' }} 
+          >
+            <option value="1">BTC/USD (1)</option>
+            <option value="0">USD Cash (0)</option>
+            <option value="custom">Custom...</option>
+          </select>
+          {!isDefaultSymbol && (
+            <input 
+              type="text" 
+              className="modern-input"
+              value={symbolId} 
+              onChange={e => onSymbolChange(e.target.value.replace(/[^0-9]/g, ''))} 
+              style={{ width: '40px', padding: '2px 6px', height: '24px' }} 
+              placeholder="ID"
+            />
+          )}
         </div>
       </div>
       

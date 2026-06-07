@@ -45,6 +45,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
   const [positions, setPositions] = useState<Map<number, SymbolPosition>>(new Map());
   const [cash, setCash] = useState<bigint>(0n);
   const [subscribedSymbols, setSubscribedSymbols] = useState<Set<number>>(new Set());
+  const [mgmtLogs, setMgmtLogs] = useState<string[]>([]);
 
   const inflightOrdersRef = useRef<Map<string, { side: Side, symbolId: number }>>(new Map());
   const orderMetadataRef = useRef<Map<string, { side: Side, symbolId: number }>>(new Map());
@@ -73,7 +74,10 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
   }, []);
 
   const addMgmtLog = useCallback((msg: string) => {
-    console.log(`[Mgmt] ${new Date().toLocaleTimeString()} - ${msg}`);
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const logEntry = `[${timestamp}] ${msg}`;
+    setMgmtLogs(prev => [...prev, logEntry].slice(-100));
+    console.log(`[Mgmt] ${logEntry}`);
   }, []);
 
   const addL2Log = useCallback((msg: string) => {
@@ -533,6 +537,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     disconnectAll,
     sendOrder,
     cancelOrder,
-    modifyOrder
+    modifyOrder,
+    mgmtLogs
   };
 }

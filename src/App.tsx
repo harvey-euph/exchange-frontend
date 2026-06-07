@@ -6,6 +6,7 @@ import { OrderBook } from './components/OrderBook';
 import { OrderEntry } from './components/OrderEntry';
 import { OpenOrders } from './components/OpenOrders';
 import { Positions } from './components/Positions';
+import { EmbeddedLog } from './components/EmbeddedLog';
 import { NotificationSystem } from './components/NotificationSystem';
 import type { NotificationSystemRef } from './components/NotificationSystem';
 import './App.css';
@@ -18,6 +19,8 @@ function App() {
   const [side, setSide] = useState<Side>(Side.Buy);
   const [peggedLevel, setPeggedLevel] = useState<number | null>(null);
   const [hasLoggedIn, setHasLoggedIn] = useState(false);
+  const [activeTab, setActiveTab] = useState<'orders' | 'positions'>('orders');
+  const [expandedSymbols, setExpandedSymbols] = useState<Set<number>>(new Set());
   
   const notifRef = useRef<NotificationSystemRef>(null);
 
@@ -38,7 +41,8 @@ function App() {
     subscribeL2,
     sendOrder,
     cancelOrder,
-    modifyOrder
+    modifyOrder,
+    mgmtLogs
   } = useExchange(parseInt(symbolId), handleNotification);
 
   useEffect(() => {
@@ -53,6 +57,16 @@ function App() {
       setHasLoggedIn(true);
     }
   }, [connected.mgmtReady]);
+
+  // Auto-expand current symbol
+  useEffect(() => {
+    if (symbolId !== undefined) {
+      const sid = parseInt(symbolId);
+      if (!isNaN(sid)) {
+        setExpandedSymbols(prev => new Set([...prev, sid]));
+      }
+    }
+  }, [symbolId]);
 
   const sortedAsks = useMemo(() => 
     Array.from(asks.entries())
@@ -123,6 +137,48 @@ function App() {
     connectMgmt(clientId, symbolId);
   };
 
+  const totalValue = useMemo(() => {
+    let value = cash;
+    for (const [sId, pos] of positions) {
+      const price = prices.get(sId) || pos.averagePrice || 0n;
+      const posValue = pos.side === Side.Buy ? pos.totalQuantity * price : -pos.totalQuantity * price;
+      value += posValue;
+    }
+    return value;
+  }, [positions, cash, prices]);
+
+  const toggleSymbol = (sid: number) => {
+    setExpandedSymbols(prev => {
+      const next = new Set(prev);
+      if (next.has(sid)) next.delete(sid);
+      else next.add(sid);
+      return next;
+    });
+  };
+
+  const currentTabSymbols = useMemo(() => {
+    if (activeTab === 'orders') {
+      const symbols = new Set<number>();
+      openOrders.forEach(o => symbols.add(o.symbolId));
+      return Array.from(symbols);
+    } else {
+      return Array.from(positions.keys()).filter(sid => {
+        const p = positions.get(sid);
+        return p && (p.totalQuantity !== 0n || p.realizedPnL !== 0n);
+      });
+    }
+  }, [activeTab, openOrders, positions]);
+
+  const isAllExpanded = currentTabSymbols.length > 0 && currentTabSymbols.every(s => expandedSymbols.has(s));
+
+  const handleToggleExpandAll = () => {
+    if (isAllExpanded) {
+      setExpandedSymbols(new Set());
+    } else {
+      setExpandedSymbols(new Set(currentTabSymbols));
+    }
+  };
+
   return (
     <div className="app-container">
       <NotificationSystem ref={notifRef} />
@@ -157,31 +213,77 @@ function App() {
         <div className="right-panel">
           <div className="layout-columns">
             <div className="left-col">
-              <OpenOrders 
-                orders={Array.from(openOrders.values())}
-                onModify={handleModifyOrder}
-                onCancel={handleCancelOrder}
-                currentSymbolId={symbolId}
-              />
+              <div className="modern-card tab-container">
+                <div className="tab-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', gap: '20px' }}>
+                    <button 
+                      className={`tab-item ${activeTab === 'orders' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('orders')}
+                    >
+                      OPEN ORDERS
+                    </button>
+                    <button 
+                      className={`tab-item ${activeTab === 'positions' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('positions')}
+                    >
+                      POSITIONS
+                    </button>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>NAV:</span>
+                      <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 'bold', fontFamily: 'var(--font-mono)' }}>
+                        {totalValue.toString()}
+                      </span>
+                    </div>
+                    <button 
+                      className="modern-button btn-secondary" 
+                      onClick={handleToggleExpandAll}
+                      style={{ padding: '2px 8px', fontSize: '10px', height: '22px', minWidth: '85px' }}
+                    >
+                      {isAllExpanded ? 'Collapse All' : 'Expand All'}
+                    </button>
+                  </div>
+                </div>
+                <div className="tab-content">
+                  {activeTab === 'orders' ? (
+                    <OpenOrders 
+                      orders={Array.from(openOrders.values())}
+                      onModify={handleModifyOrder}
+                      onCancel={handleCancelOrder}
+                      currentSymbolId={symbolId}
+                      noWrapper
+                      expandedSymbols={expandedSymbols}
+                      onToggleSymbol={toggleSymbol}
+                    />
+                  ) : (
+                    <Positions 
+                      positions={Array.from(positions.entries())} 
+                      prices={prices} 
+                      currentSymbolId={symbolId}
+                      onFlatten={handleFlatten}
+                      noWrapper
+                      expandedSymbols={expandedSymbols}
+                      onToggleSymbol={toggleSymbol}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
             <div className="right-col">
               <OrderEntry 
-                isLoggedIn={connected.mgmtReady}
+                isLoggedIn={hasLoggedIn}
                 clientId={clientId}
                 setClientId={setClientId}
                 onLogin={handleLogin}
                 price={price} quantity={quantity} side={side} peggedLevel={peggedLevel}
                 setPrice={setPrice} setQuantity={setQuantity} setSide={setSide} setPeggedLevel={setPeggedLevel}
                 onSendOrder={handleSendOrder}
+                cash={cash}
                 disabled={!connected.mgmtReady}
               />
-              <Positions 
-                positions={Array.from(positions.entries())} 
-                cash={cash} 
-                prices={prices} 
-                currentSymbolId={symbolId}
-                onFlatten={handleFlatten}
-              />
+              <EmbeddedLog logs={mgmtLogs} />
             </div>
           </div>
         </div>
