@@ -523,6 +523,10 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     mgmtWsRef.current.send(builder.asUint8Array() as any)
   }, [addMgmtLog]);
 
+  const clearMgmtLogs = useCallback(() => {
+    setMgmtLogs([]);
+  }, []);
+
   return {
     connected,
     bids,
@@ -538,6 +542,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     sendOrder,
     cancelOrder,
     modifyOrder,
-    mgmtLogs
+    mgmtLogs,
+    clearMgmtLogs
   };
 }

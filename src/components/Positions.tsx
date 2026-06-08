@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import type { SymbolPosition } from '../types';
 import { Side } from '../fbs/exchange/side';
 
@@ -13,11 +13,11 @@ interface PositionsProps {
 }
 
 export const Positions: React.FC<PositionsProps> = ({ 
-  positions, prices, currentSymbolId, onFlatten, noWrapper,
+  positions, prices, onFlatten, noWrapper,
   expandedSymbols, onToggleSymbol
 }) => {
   const activePositions = useMemo(() => 
-    positions.filter(([_, p]) => p.totalQuantity !== 0n || p.realizedPnL !== 0n)
+    positions.filter(([, p]) => p.totalQuantity !== 0n || p.realizedPnL !== 0n)
       .sort((a, b) => a[0] - b[0]),
   [positions]);
 

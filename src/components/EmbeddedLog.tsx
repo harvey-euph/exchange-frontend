@@ -2,9 +2,10 @@ import React, { useEffect, useRef } from 'react';
 
 interface EmbeddedLogProps {
   logs: string[];
+  onClear: () => void;
 }
 
-export const EmbeddedLog: React.FC<EmbeddedLogProps> = ({ logs }) => {
+export const EmbeddedLog: React.FC<EmbeddedLogProps> = ({ logs, onClear }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,6 +53,22 @@ export const EmbeddedLog: React.FC<EmbeddedLogProps> = ({ logs }) => {
     <div className="modern-card" style={{ height: '240px', display: 'flex', flexDirection: 'column', padding: '12px' }}>
       <div className="block-header" style={{ marginBottom: '12px' }}>
         <h2 className="block-title">Activity Log</h2>
+        <button
+          className="modern-button btn-secondary"
+          onClick={onClear}
+          style={{
+            padding: '2px 8px',
+            fontSize: '10px',
+            height: '20px',
+            lineHeight: '14px',
+            minWidth: 'auto',
+            borderRadius: '4px',
+            border: '1px solid var(--border-color)',
+            cursor: 'pointer'
+          }}
+        >
+          Clear
+        </button>
       </div>
       <div 
         ref={scrollRef}

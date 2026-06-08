@@ -42,7 +42,8 @@ function App() {
     sendOrder,
     cancelOrder,
     modifyOrder,
-    mgmtLogs
+    mgmtLogs,
+    clearMgmtLogs
   } = useExchange(parseInt(symbolId), handleNotification);
 
   useEffect(() => {
@@ -283,7 +284,7 @@ function App() {
                 cash={cash}
                 disabled={!connected.mgmtReady}
               />
-              <EmbeddedLog logs={mgmtLogs} />
+              <EmbeddedLog logs={mgmtLogs} onClear={clearMgmtLogs} />
             </div>
           </div>
         </div>
