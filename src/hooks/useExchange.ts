@@ -61,9 +61,14 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
   const mgmtReadyNotifiedRef = useRef(false);
   const isInitialLoginRef = useRef(true);
 
+  const bidsRef = useRef<Map<bigint, bigint>>(new Map());
+  const asksRef = useRef<Map<bigint, bigint>>(new Map());
+
   useEffect(() => {
     setBids(new Map());
     setAsks(new Map());
+    bidsRef.current.clear();
+    asksRef.current.clear();
   }, [activeSymbolId]);
 
   const subscribeL2 = useCallback((sId: number) => {
@@ -378,6 +383,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     };
 
     ws.onmessage = (event) => {
+      if (ws.readyState !== WebSocket.OPEN) return;
       try {
         const buf = new Uint8Array(event.data);
         const bb = new flatbuffers.ByteBuffer(buf);
@@ -391,6 +397,8 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
           if (sId === activeSymbolId) {
             setBids(new Map());
             setAsks(new Map());
+            bidsRef.current.clear();
+            asksRef.current.clear();
           }
           return; 
         }
@@ -402,6 +410,11 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
               if (q === BigInt(0)) next.delete(p); else next.set(p, q); 
               return next; 
             });
+            if (q === BigInt(0)) {
+              bidsRef.current.delete(p);
+            } else {
+              bidsRef.current.set(p, q);
+            }
           }
           
           // Always update prices for total value calculation
@@ -414,7 +427,46 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
           });
         } else if (side === Side.Sell) {
           if (sId === activeSymbolId) {
-            setAsks(prev => { const next = new Map(prev); if (q === BigInt(0)) next.delete(p); else next.set(p, q); return next; });
+            setAsks(prev => { 
+              const next = new Map(prev); 
+              if (q === BigInt(0)) next.delete(p); else next.set(p, q); 
+              return next; 
+            });
+            if (q === BigInt(0)) {
+              asksRef.current.delete(p);
+            } else {
+              asksRef.current.set(p, q);
+            }
+          }
+        }
+
+        // Price cross check
+        if (sId === activeSymbolId) {
+          let bestBid: bigint | null = null;
+          for (const price of bidsRef.current.keys()) {
+            if (bestBid === null || price > bestBid) {
+              bestBid = price;
+            }
+          }
+
+          let bestAsk: bigint | null = null;
+          for (const price of asksRef.current.keys()) {
+            if (bestAsk === null || price < bestAsk) {
+              bestAsk = price;
+            }
+          }
+
+          if (bestBid !== null && bestAsk !== null && bestBid >= bestAsk) {
+            addMgmtLog(`[Error] Orderbook crossed! Best Bid: ${bestBid} >= Best Ask: ${bestAsk}. Reconnecting L2 WS...`);
+            onNotification?.('rejected', 'Orderbook Crossed', `Best Bid ${bestBid} >= Best Ask ${bestAsk}. Reconnecting...`);
+            
+            // Clear book state to prevent duplicate/stale checks before reconnection
+            bidsRef.current.clear();
+            asksRef.current.clear();
+            setBids(new Map());
+            setAsks(new Map());
+
+            ws.close();
           }
         }
       } catch (err) { addL2Log(`Decode Error: ${err}`); }
