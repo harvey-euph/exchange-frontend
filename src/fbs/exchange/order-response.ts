@@ -70,8 +70,18 @@ rejectCode():RejectCode {
   return offset ? this.bb!.readInt8(this.bb_pos + offset) : RejectCode.None;
 }
 
+engineLatency():bigint {
+  const offset = this.bb!.__offset(this.bb_pos, 22);
+  return offset ? this.bb!.readUint64(this.bb_pos + offset) : BigInt('0');
+}
+
+managerLatency():bigint {
+  const offset = this.bb!.__offset(this.bb_pos, 24);
+  return offset ? this.bb!.readUint64(this.bb_pos + offset) : BigInt('0');
+}
+
 static startOrderResponse(builder:flatbuffers.Builder) {
-  builder.startObject(9);
+  builder.startObject(11);
 }
 
 static addExecType(builder:flatbuffers.Builder, execType:ExecType) {
@@ -110,12 +120,20 @@ static addRejectCode(builder:flatbuffers.Builder, rejectCode:RejectCode) {
   builder.addFieldInt8(8, rejectCode, RejectCode.None);
 }
 
+static addEngineLatency(builder:flatbuffers.Builder, engineLatency:bigint) {
+  builder.addFieldInt64(9, engineLatency, BigInt('0'));
+}
+
+static addManagerLatency(builder:flatbuffers.Builder, managerLatency:bigint) {
+  builder.addFieldInt64(10, managerLatency, BigInt('0'));
+}
+
 static endOrderResponse(builder:flatbuffers.Builder):flatbuffers.Offset {
   const offset = builder.endObject();
   return offset;
 }
 
-static createOrderResponse(builder:flatbuffers.Builder, execType:ExecType, orderId:bigint, clientId:number, execId:bigint, symbolId:number, side:Side, p:bigint, q:bigint, rejectCode:RejectCode):flatbuffers.Offset {
+static createOrderResponse(builder:flatbuffers.Builder, execType:ExecType, orderId:bigint, clientId:number, execId:bigint, symbolId:number, side:Side, p:bigint, q:bigint, rejectCode:RejectCode, engineLatency:bigint, managerLatency:bigint):flatbuffers.Offset {
   OrderResponse.startOrderResponse(builder);
   OrderResponse.addExecType(builder, execType);
   OrderResponse.addOrderId(builder, orderId);
@@ -126,6 +144,8 @@ static createOrderResponse(builder:flatbuffers.Builder, execType:ExecType, order
   OrderResponse.addP(builder, p);
   OrderResponse.addQ(builder, q);
   OrderResponse.addRejectCode(builder, rejectCode);
+  OrderResponse.addEngineLatency(builder, engineLatency);
+  OrderResponse.addManagerLatency(builder, managerLatency);
   return OrderResponse.endOrderResponse(builder);
 }
 }

@@ -49,6 +49,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
 
   const inflightOrdersRef = useRef<Map<string, { side: Side, symbolId: number }>>(new Map());
   const orderMetadataRef = useRef<Map<string, { side: Side, symbolId: number }>>(new Map());
+  const sentRequestsRef = useRef<Map<string, number>>(new Map());
   const nextExecId = useRef(BigInt(Date.now()));
   const nextOrderId = useRef(BigInt(Date.now()) * 1000n);
 
@@ -112,8 +113,21 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
       return;
     }
     
+    const sentTime = sentRequestsRef.current.get(execId);
+    let latencyStr = '';
+    if (sentTime !== undefined) {
+      const rttMs = performance.now() - sentTime;
+      const engineLat = resp.engineLatency();
+      const managerLat = resp.managerLatency();
+      latencyStr = ` Latency=${rttMs.toFixed(3)}ms`;
+      if (engineLat > 0n || managerLat > 0n) {
+        latencyStr += ` (Engine=${engineLat}cyc, Mgr=${managerLat}cyc)`;
+      }
+      sentRequestsRef.current.delete(execId);
+    }
+
     const execName = ExecType[execType] ?? `Unknown(${execType})`;
-    addMgmtLog(`[Exec] ID=${orderId} Type=${execName} Side=${Side[side]} P=${p} Q=${q} ExecID=${execId}`);
+    addMgmtLog(`[Exec] ID=${orderId} Type=${execName} Side=${Side[side]} P=${p} Q=${q} ExecID=${execId}${latencyStr}`);
 
     // Deduplicate notifications by execId
     const shouldNotify = execId !== '0' && !notifiedExecIds.current.has(execId);
@@ -123,7 +137,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
 
     if (rejectCode !== 0) {
       const msg = REJECT_MESSAGES[rejectCode] || `Error Code: ${rejectCode}`;
-      addMgmtLog(`[Error] Order Rejected: ID=${orderId} Code=${rejectCode} (${msg})`);
+      addMgmtLog(`[Error] Order Rejected: ID=${orderId} Code=${rejectCode} (${msg})${latencyStr}`);
       if (shouldNotify) {
         onNotification?.('rejected', 'Order Rejected', `${msg} (ID: ${orderId})`);
       }
@@ -287,6 +301,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
       setOpenOrders(new Map());
       // On re-open, we keep positions to avoid flickering but we will sync net qty
       notifiedExecIds.current.clear();
+      sentRequestsRef.current.clear();
       mgmtReadyNotifiedRef.current = false;
       addMgmtLog(`Connected ClientID=${clientId}`);
       setConnected(prev => ({ ...prev, mgmt: true }));
@@ -525,6 +540,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     builder.finish(ClientRequest.endClientRequest(builder));
     try {
       addMgmtLog(`Sending ${Side[side]} ${OrderType[type]} order: ClientID=${clientId}(${numericClientId}) P=${price} Q=${quantity} ID=${orderId} ExecID=${execId}`);
+      sentRequestsRef.current.set(execId.toString(), performance.now());
       mgmtWsRef.current.send(builder.asUint8Array() as any);
     } catch (err) { addMgmtLog(`Order send error: ${err}`); }
   }, [addMgmtLog]);
@@ -548,6 +564,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     ClientRequest.addData(builder, off);
     builder.finish(ClientRequest.endClientRequest(builder));
     addMgmtLog(`Cancelling Order: ClientID=${clientId}(${numericClientId}) ID=${order.orderId} ExecID=${execId}`)
+    sentRequestsRef.current.set(execId.toString(), performance.now());
     mgmtWsRef.current.send(builder.asUint8Array() as any)
   }, [addMgmtLog]);
 
@@ -572,6 +589,7 @@ export function useExchange(activeSymbolId: number, onNotification?: (type: 'ack
     ClientRequest.addData(builder, off);
     builder.finish(ClientRequest.endClientRequest(builder));
     addMgmtLog(`Modifying Order: ClientID=${clientId}(${numericClientId}) ID=${order.orderId} NewP=${newPrice} NewQ=${newQty} ExecID=${execId}`)
+    sentRequestsRef.current.set(execId.toString(), performance.now());
     mgmtWsRef.current.send(builder.asUint8Array() as any)
   }, [addMgmtLog]);
 
